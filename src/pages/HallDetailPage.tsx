@@ -7,7 +7,7 @@ import {
   TextRow, NumberRow, ToggleRow, SelectRow,
   AnniversaryRow, PropSection,
 } from '../components/HallPropertyRow';
-import ChainTagManager from '../components/ChainTagManager';
+import ChainSelector from '../components/ChainSelector';
 import HallLinkEditor from '../components/HallLinkEditor';
 import CalendarView from '../components/CalendarView';
 import CalendarEntryModal from '../components/CalendarEntryModal';
@@ -83,8 +83,8 @@ export default function HallDetailPage() {
         <div className="bg-white mt-3 mx-3 rounded-xl shadow overflow-hidden">
           <PropSection title="基本情報" />
 
-          {/* ② 系列タグ */}
-          <ChainTagManager
+          {/* 系列タグ */}
+          <ChainSelector
             value={hall.chain ?? ''}
             onSave={v => update({ chain: v || undefined })}
           />
