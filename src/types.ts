@@ -1,5 +1,6 @@
 export type MachineType = 'pachinko' | 'slot';
 export type ParkingType = 'free' | 'paid' | 'none';
+export type ClosingStatus = '休業' | '閉店';
 
 // レートごとの台数
 export interface HallRates {
@@ -44,7 +45,7 @@ export interface Hall {
   hasNo20yen?: boolean;    // 20円スロットなし
   savedMedals?: number;    // 貯メダル（枚数）
   savedBalls?: number;     // 貯玉（個数）
-  closingInfo?: string;    // 閉店情報
+  closingInfo?: ClosingStatus; // 閉店情報
   specialDays?: string;    // 特日（例：5の付く日）
   createdAt: string;
 }

@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Map } from 'lucide-react';
 import { hallStore, calendarStore } from '../store';
-import { Hall, CalendarEntry, ParkingType } from '../types';
+import { Hall, CalendarEntry, ParkingType, ClosingStatus } from '../types';
 import {
   TextRow, NumberRow, ToggleRow, SelectRow,
   AnniversaryRow, PropSection,
@@ -17,6 +17,11 @@ const PARKING_OPTIONS = [
   { value: 'free', label: '無料' },
   { value: 'paid', label: '有料' },
   { value: 'none', label: 'なし' },
+];
+
+const CLOSING_OPTIONS = [
+  { value: '休業', label: '休業' },
+  { value: '閉店', label: '閉店' },
 ];
 
 export default function HallDetailPage() {
@@ -111,10 +116,11 @@ export default function HallDetailPage() {
             value={hall.address ?? ''}
             onSave={v => update({ address: v || undefined })}
           />
-          <TextRow
+          <SelectRow
             label="閉店情報"
-            value={hall.closingInfo ?? ''}
-            onSave={v => update({ closingInfo: v || undefined })}
+            value={hall.closingInfo}
+            options={CLOSING_OPTIONS}
+            onChange={v => update({ closingInfo: (v as ClosingStatus) || undefined })}
           />
 
           <PropSection title="台数" />
