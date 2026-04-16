@@ -27,10 +27,9 @@ function write<T>(key: string, value: T): void {
 export const hallStore = {
   getAll: (): Hall[] => read('halls', []),
 
-  add(name: string, address?: string, notes?: string): Hall {
-    const hall: Hall = { id: genId(), name, address, notes, createdAt: new Date().toISOString() };
-    const all = this.getAll();
-    write('halls', [...all, hall]);
+  add(data: Omit<Hall, 'id' | 'createdAt'>): Hall {
+    const hall: Hall = { ...data, id: genId(), createdAt: new Date().toISOString() };
+    write('halls', [...this.getAll(), hall]);
     return hall;
   },
 

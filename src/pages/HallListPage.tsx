@@ -24,7 +24,11 @@ export default function HallListPage() {
   function saveHall() {
     if (!form.name.trim()) return;
     if (modal?.mode === 'add') {
-      hallStore.add(form.name.trim(), form.address.trim() || undefined, form.notes.trim() || undefined);
+      hallStore.add({
+        name: form.name.trim(),
+        address: form.address.trim() || undefined,
+        notes: form.notes.trim() || undefined,
+      });
     } else if (modal?.mode === 'edit' && modal.hall) {
       hallStore.update(modal.hall.id, {
         name: form.name.trim(),

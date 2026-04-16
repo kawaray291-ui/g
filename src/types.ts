@@ -1,9 +1,39 @@
 export type MachineType = 'pachinko' | 'slot';
+export type ParkingType = 'free' | 'paid' | 'none';
+
+// レートごとの台数
+export interface HallRates {
+  // スロット（円/枚）
+  slot20?: number;   // 20円
+  slot5?: number;    //  5円
+  slot2?: number;    //  2円
+  slot1?: number;    //  1円
+  // パチンコ（円/玉）
+  pachinko4?: number;   // 4円
+  pachinko2?: number;   // 2円
+  pachinko1?: number;   // 1円
+  pachinko05?: number;  // 0.5円
+}
+
+export interface HallLink {
+  label: string;
+  url: string;
+}
 
 export interface Hall {
   id: string;
   name: string;
+  chain?: string;           // 系列名
+  prefecture?: string;      // 都道府県
   address?: string;
+  totalMachines?: number;   // 総台数
+  slotCount?: number;       // スロット台数
+  pachinkoCount?: number;   // パチンコ台数
+  rates?: HallRates;        // レートごとの台数
+  parking?: ParkingType;    // 駐車場
+  anniversaryMonth?: number; // 周年月（1-12）
+  anniversaryDay?: number;   // 周年日（1-31）
+  links?: HallLink[];       // 各種サイトリンク
   notes?: string;
   createdAt: string;
 }
