@@ -76,6 +76,7 @@ export interface CalendarEntry {
   memo: string;
   medalDiff?: number;     // 差枚数（±）
   avgRotation?: number;   // 平均回転率
+  queueCount?: number;    // 並び人数
   updatedAt: string;
 }
 
