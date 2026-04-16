@@ -157,15 +157,17 @@ export default function HallDetailPage() {
             value={hall.hasNo20yen ?? false}
             onChange={v => update({ hasNo20yen: v })}
           />
-          <ToggleRow
-            label="貯メダル"
-            value={hall.savedMedals ?? false}
-            onChange={v => update({ savedMedals: v })}
+          <NumberRow
+            label="貯メダル（枚）"
+            value={hall.savedMedals}
+            placeholder="未設定"
+            onSave={v => update({ savedMedals: v })}
           />
-          <ToggleRow
-            label="貯玉"
-            value={hall.savedBalls ?? false}
-            onChange={v => update({ savedBalls: v })}
+          <NumberRow
+            label="貯玉（個）"
+            value={hall.savedBalls}
+            placeholder="未設定"
+            onSave={v => update({ savedBalls: v })}
           />
           <SelectRow
             label="駐車場"
