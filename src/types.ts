@@ -20,6 +20,12 @@ export interface HallLink {
   url: string;
 }
 
+export interface ChainTag {
+  id: string;
+  name: string;
+  color: string;   // hex カラー（例：'#3b82f6'）
+}
+
 export interface Hall {
   id: string;
   name: string;

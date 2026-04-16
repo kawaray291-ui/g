@@ -1,3 +1,10 @@
+export const CHAIN_PRESET_COLORS = [
+  '#ef4444', '#f97316', '#f59e0b', '#eab308',
+  '#84cc16', '#22c55e', '#14b8a6', '#06b6d4',
+  '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7',
+  '#ec4899', '#f43f5e', '#6b7280', '#1e293b',
+] as const;
+
 export const CHAINS = [
   'ダイナム', 'マルハン', 'ガイア', 'ニラク', 'エスパス', 'ゆいまーる', '楽園',
 ] as const;

@@ -1,8 +1,9 @@
 import { Pencil, Trash2, ChevronRight, ExternalLink } from 'lucide-react';
-import { Hall } from '../types';
+import { Hall, ChainTag } from '../types';
 
 interface Props {
   hall: Hall;
+  chainTags: ChainTag[];
   onEdit: () => void;
   onDelete: () => void;
   onClick: () => void;
@@ -26,8 +27,9 @@ const PARKING_LABEL: Record<string, { text: string; cls: string }> = {
   none: { text: '🅿 なし', cls: 'bg-gray-100 text-gray-500'  },
 };
 
-export default function HallCard({ hall, onEdit, onDelete, onClick }: Props) {
+export default function HallCard({ hall, chainTags, onEdit, onDelete, onClick }: Props) {
   const activeRates = RATE_DEFS.filter(d => (hall.rates?.[d.key] ?? 0) > 0);
+  const chainTag = hall.chain ? chainTags.find(t => t.name === hall.chain) : undefined;
   const parking = hall.parking ? PARKING_LABEL[hall.parking] : null;
   const hasAnni = hall.anniversaryMonth && hall.anniversaryDay;
   const hasMachineInfo =
@@ -44,7 +46,13 @@ export default function HallCard({ hall, onEdit, onDelete, onClick }: Props) {
         <div className="flex items-start gap-2">
           <p className="font-bold text-gray-900 text-base flex-1 leading-snug">{hall.name}</p>
           {hall.chain && (
-            <span className="shrink-0 text-xs bg-blue-100 text-blue-800 font-medium px-2 py-0.5 rounded-full">
+            <span
+              className="shrink-0 text-xs font-medium px-2 py-0.5 rounded-full"
+              style={chainTag
+                ? { backgroundColor: chainTag.color + '28', color: chainTag.color }
+                : { backgroundColor: '#f3f4f6', color: '#6b7280' }
+              }
+            >
               {hall.chain}
             </span>
           )}

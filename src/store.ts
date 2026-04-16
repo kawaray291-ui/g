@@ -1,4 +1,4 @@
-import { Hall, Island, Machine, MachineNote, VisitRecord, CalendarEntry, MachineType } from './types';
+import { Hall, Island, Machine, MachineNote, VisitRecord, CalendarEntry, MachineType, ChainTag } from './types';
 
 // ─── ID生成 ─────────────────────────────────────────────────
 let seq = Date.now();
@@ -256,6 +256,20 @@ export const calendarStore = {
 
 // ─── 系列タグ（全ホール共通） ─────────────────────────────────
 export const chainTagStore = {
-  getAll: (): string[] => read('chainTags', []),
-  save: (tags: string[]): void => write('chainTags', tags),
+  getAll(): ChainTag[] {
+    const raw = read<unknown[]>('chainTags', []);
+    if (!raw.length) return [];
+    // 旧フォーマット（string[]）からの自動マイグレーション
+    if (typeof raw[0] === 'string') {
+      const migrated: ChainTag[] = (raw as string[]).map((name, i) => ({
+        id: String(Date.now() + i),
+        name,
+        color: '#6b7280',
+      }));
+      write('chainTags', migrated);
+      return migrated;
+    }
+    return raw as ChainTag[];
+  },
+  save: (tags: ChainTag[]): void => write('chainTags', tags),
 };
