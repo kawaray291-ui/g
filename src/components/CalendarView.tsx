@@ -167,6 +167,11 @@ export default function CalendarView({ entries, onDayClick }: Props) {
               {/* データ表示 */}
               {entry && isCurrent && (
                 <div className="mt-0.5 flex flex-col gap-0.5 overflow-hidden w-full">
+                  {entry.queueCount !== undefined && (
+                    <span className="text-xs text-indigo-600 font-medium leading-none">
+                      👥{entry.queueCount}人
+                    </span>
+                  )}
                   {entry.medalDiff !== undefined && (
                     <span className={`text-xs font-bold leading-none ${
                       entry.medalDiff >= 0 ? 'text-green-700' : 'text-red-600'
