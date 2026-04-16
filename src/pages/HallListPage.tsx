@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Building2, Filter, X } from 'lucide-react';
+import { Plus, Building2, Filter, X, ArrowUpDown } from 'lucide-react';
 import { hallStore } from '../store';
 import { Hall } from '../types';
 import HallCard from '../components/HallCard';
@@ -17,6 +17,9 @@ export default function HallListPage() {
   const [filterChain, setFilterChain]           = useState('');
   const [filterPrefecture, setFilterPrefecture] = useState('');
 
+  type SortKey = '' | 'medals-desc' | 'medals-asc' | 'chain-asc';
+  const [sortKey, setSortKey] = useState<SortKey>('');
+
   const chains = useMemo(
     () => [...new Set(halls.map(h => h.chain).filter((c): c is string => !!c))].sort(),
     [halls],
@@ -25,13 +28,23 @@ export default function HallListPage() {
     () => [...new Set(halls.map(h => h.prefecture).filter((p): p is string => !!p))].sort(),
     [halls],
   );
-  const filtered = useMemo(() =>
-    halls.filter(h =>
+  const filtered = useMemo(() => {
+    const base = halls.filter(h =>
       (!filterChain      || h.chain      === filterChain) &&
       (!filterPrefecture || h.prefecture === filterPrefecture)
-    ),
-    [halls, filterChain, filterPrefecture],
-  );
+    );
+    const arr = [...base];
+    switch (sortKey) {
+      case 'medals-desc':
+        return arr.sort((a, b) => (b.savedMedals ?? -1) - (a.savedMedals ?? -1));
+      case 'medals-asc':
+        return arr.sort((a, b) => (a.savedMedals ?? Infinity) - (b.savedMedals ?? Infinity));
+      case 'chain-asc':
+        return arr.sort((a, b) => (a.chain ?? '').localeCompare(b.chain ?? '', 'ja'));
+      default:
+        return arr;
+    }
+  }, [halls, filterChain, filterPrefecture, sortKey]);
   const isFiltered = filterChain !== '' || filterPrefecture !== '';
 
   // ─── 追加 / 編集モーダル ───────────────────────────────────
@@ -75,34 +88,51 @@ export default function HallListPage() {
         )}
       </header>
 
-      {/* フィルターバー（1件以上ある場合のみ表示） */}
+      {/* フィルター・並び替えバー（1件以上ある場合のみ表示） */}
       {halls.length > 0 && (
-        <div className="bg-white border-b border-gray-200 px-3 py-2 flex items-center gap-2">
-          <Filter size={13} className="text-gray-400 shrink-0" />
-          <select
-            className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 outline-none min-w-0"
-            value={filterChain}
-            onChange={e => setFilterChain(e.target.value)}
-          >
-            <option value="">系列: すべて</option>
-            {chains.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <select
-            className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 outline-none min-w-0"
-            value={filterPrefecture}
-            onChange={e => setFilterPrefecture(e.target.value)}
-          >
-            <option value="">都道府県: すべて</option>
-            {prefectures.map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
-          {isFiltered && (
-            <button
-              className="shrink-0 text-xs text-blue-600 font-medium flex items-center gap-0.5 active:text-blue-800"
-              onClick={() => { setFilterChain(''); setFilterPrefecture(''); }}
+        <div className="bg-white border-b border-gray-200 px-3 py-2 flex flex-col gap-2">
+          {/* フィルター行 */}
+          <div className="flex items-center gap-2">
+            <Filter size={13} className="text-gray-400 shrink-0" />
+            <select
+              className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 outline-none min-w-0"
+              value={filterChain}
+              onChange={e => setFilterChain(e.target.value)}
             >
-              <X size={12} />クリア
-            </button>
-          )}
+              <option value="">系列: すべて</option>
+              {chains.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select
+              className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 outline-none min-w-0"
+              value={filterPrefecture}
+              onChange={e => setFilterPrefecture(e.target.value)}
+            >
+              <option value="">都道府県: すべて</option>
+              {prefectures.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+            {isFiltered && (
+              <button
+                className="shrink-0 text-xs text-blue-600 font-medium flex items-center gap-0.5 active:text-blue-800"
+                onClick={() => { setFilterChain(''); setFilterPrefecture(''); }}
+              >
+                <X size={12} />クリア
+              </button>
+            )}
+          </div>
+          {/* 並び替え行 */}
+          <div className="flex items-center gap-2">
+            <ArrowUpDown size={13} className="text-gray-400 shrink-0" />
+            <select
+              className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 outline-none"
+              value={sortKey}
+              onChange={e => setSortKey(e.target.value as SortKey)}
+            >
+              <option value="">並び替え: デフォルト</option>
+              <option value="medals-desc">貯メダル: 多い順</option>
+              <option value="medals-asc">貯メダル: 少ない順</option>
+              <option value="chain-asc">系列: あいうえお順</option>
+            </select>
+          </div>
         </div>
       )}
 
