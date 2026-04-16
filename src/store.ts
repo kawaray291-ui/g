@@ -1,4 +1,4 @@
-import { Hall, Island, Machine, MachineNote, VisitRecord, MachineType } from './types';
+import { Hall, Island, Machine, MachineNote, VisitRecord, CalendarEntry, MachineType } from './types';
 
 // ─── ID生成 ─────────────────────────────────────────────────
 let seq = Date.now();
@@ -177,5 +177,48 @@ export const visitStore = {
 
   delete(id: string): void {
     write('visitRecords', this.getAll().filter(v => v.id !== id));
+  },
+};
+
+// ─── カレンダー記録 ───────────────────────────────────────────
+export const calendarStore = {
+  getAll: (): CalendarEntry[] => read('calendarEntries', []),
+
+  getByHall: (hallId: string): CalendarEntry[] =>
+    read<CalendarEntry[]>('calendarEntries', []).filter(e => e.hallId === hallId),
+
+  getByDate: (hallId: string, date: string): CalendarEntry | undefined =>
+    read<CalendarEntry[]>('calendarEntries', []).find(
+      e => e.hallId === hallId && e.date === date
+    ),
+
+  upsert(
+    hallId: string,
+    date: string,
+    patch: Partial<Pick<CalendarEntry, 'memo' | 'medalDiff' | 'avgRotation'>>
+  ): CalendarEntry {
+    const all = this.getAll();
+    const existing = all.find(e => e.hallId === hallId && e.date === date);
+    const entry: CalendarEntry = {
+      id: existing?.id ?? genId(),
+      hallId,
+      date,
+      memo: '',
+      ...existing,
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
+    if (existing) {
+      write('calendarEntries', all.map(e => (e.id === entry.id ? entry : e)));
+    } else {
+      write('calendarEntries', [...all, entry]);
+    }
+    return entry;
+  },
+
+  delete(hallId: string, date: string): void {
+    write('calendarEntries', this.getAll().filter(
+      e => !(e.hallId === hallId && e.date === date)
+    ));
   },
 };

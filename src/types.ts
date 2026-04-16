@@ -69,6 +69,16 @@ export interface MachineNote {
   updatedAt: string;
 }
 
+export interface CalendarEntry {
+  id: string;
+  hallId: string;
+  date: string;           // YYYY-MM-DD
+  memo: string;
+  medalDiff?: number;     // 差枚数（±）
+  avgRotation?: number;   // 平均回転率
+  updatedAt: string;
+}
+
 export interface VisitRecord {
   id: string;
   machineId: string;
