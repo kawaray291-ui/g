@@ -35,6 +35,11 @@ export interface Hall {
   anniversaryDay?: number;   // 周年日（1-31）
   links?: HallLink[];       // 各種サイトリンク
   notes?: string;
+  hasNo20yen?: boolean;    // 20円スロットなし
+  savedMedals?: boolean;   // 貯メダル
+  savedBalls?: boolean;    // 貯玉
+  closingInfo?: string;    // 閉店情報
+  specialDays?: string;    // 特日（例：5の付く日）
   createdAt: string;
 }
 

@@ -146,7 +146,7 @@ export default function FloorMapPage() {
     <div className="flex flex-col h-full bg-gray-100">
       {/* ヘッダー */}
       <header className="bg-blue-800 text-white px-4 py-3 flex items-center gap-3 shadow">
-        <button onClick={() => navigate('/')} className="active:opacity-70">
+        <button onClick={() => navigate(`/halls/${hallId}`)} className="active:opacity-70">
           <ArrowLeft size={22} />
         </button>
         <h1 className="text-base font-bold flex-1 truncate">{hall.name}</h1>
