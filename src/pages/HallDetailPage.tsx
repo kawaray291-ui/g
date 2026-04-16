@@ -5,7 +5,7 @@ import { hallStore, calendarStore } from '../store';
 import { Hall, CalendarEntry, ParkingType } from '../types';
 import {
   TextRow, NumberRow, ToggleRow, LinkRow, SelectRow,
-  AnniversaryRow, PropSection,
+  AnniversaryRow, PropSection, ChainRow,
 } from '../components/HallPropertyRow';
 import CalendarView from '../components/CalendarView';
 import CalendarEntryModal from '../components/CalendarEntryModal';
@@ -106,8 +106,7 @@ export default function HallDetailPage() {
         {/* ─── プロパティ ─── */}
         <div className="bg-white mt-3 mx-3 rounded-xl shadow overflow-hidden">
           <PropSection title="基本情報" />
-          <TextRow
-            label="系列"
+          <ChainRow
             value={hall.chain ?? ''}
             onSave={v => update({ chain: v || undefined })}
           />
@@ -157,15 +156,17 @@ export default function HallDetailPage() {
             value={hall.hasNo20yen ?? false}
             onChange={v => update({ hasNo20yen: v })}
           />
-          <ToggleRow
-            label="貯メダル"
-            value={hall.savedMedals ?? false}
-            onChange={v => update({ savedMedals: v })}
+          <NumberRow
+            label="貯メダル（枚）"
+            value={hall.savedMedals}
+            placeholder="未設定"
+            onSave={v => update({ savedMedals: v })}
           />
-          <ToggleRow
-            label="貯玉"
-            value={hall.savedBalls ?? false}
-            onChange={v => update({ savedBalls: v })}
+          <NumberRow
+            label="貯玉（個）"
+            value={hall.savedBalls}
+            placeholder="未設定"
+            onSave={v => update({ savedBalls: v })}
           />
           <SelectRow
             label="駐車場"
@@ -210,8 +211,8 @@ export default function HallDetailPage() {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1 mb-1">メモ</p>
           <div className="bg-white rounded-xl shadow p-4">
             <textarea
-              className="w-full text-sm text-gray-800 outline-none resize-none placeholder-gray-300 leading-relaxed"
-              rows={6}
+              className="w-full text-sm text-gray-800 outline-none resize-none placeholder-gray-300 leading-relaxed min-h-[200px]"
+              rows={10}
               placeholder="ホールについての自由メモ（自動保存されます）"
               value={memo}
               onChange={e => handleMemoChange(e.target.value)}
