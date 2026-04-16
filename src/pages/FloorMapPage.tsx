@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, List, CalendarDays } from 'lucide-react';
+import { ArrowLeft, Plus, List, CalendarDays, Eye, Pencil } from 'lucide-react';
 import { hallStore, islandStore, machineStore, noteStore, calendarStore } from '../store';
 import { Island, Machine, MachineNote, MachineType, CalendarEntry } from '../types';
 import FloorMapCanvas from '../components/FloorMapCanvas';
+import AddMachineModal from '../components/AddMachineModal';
 import CalendarView from '../components/CalendarView';
 import CalendarEntryModal from '../components/CalendarEntryModal';
 
@@ -42,6 +43,8 @@ export default function FloorMapPage() {
   );
 
   const [tab, setTab] = useState<Tab>('map');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [addMachineOpen, setAddMachineOpen] = useState(false);
   const [modal, setModal] = useState<{ mode: 'add' | 'edit'; island?: Island } | null>(null);
   const [form, setForm] = useState<IslandFormState>(defaultForm);
   const [deleteTarget, setDeleteTarget] = useState<Island | null>(null);
@@ -107,6 +110,23 @@ export default function FloorMapPage() {
     setIslands(islandStore.getByHall(hallId!));
   }, [hallId]);
 
+  const handleMachineMove = useCallback((machineId: string, x: number, y: number) => {
+    machineStore.update(machineId, { x, y });
+    setMachines(prev => prev.map(m => m.id === machineId ? { ...m, x, y } : m));
+  }, []);
+
+  const handleMachineTap = useCallback((machineId: string) => {
+    navigate(`/halls/${hallId}/machines/${machineId}`);
+  }, [hallId, navigate]);
+
+  function handleAddMachine(islandId: string, number: string, modelName: string, shortMemo: string) {
+    const island = islands.find(i => i.id === islandId);
+    if (!island) return;
+    machineStore.addSingle(islandId, number, modelName, shortMemo, island.x + 10, island.y + 40);
+    refresh();
+    setAddMachineOpen(false);
+  }
+
   function confirmDelete() {
     if (!deleteTarget) return;
     islandStore.delete(deleteTarget.id);
@@ -130,6 +150,15 @@ export default function FloorMapPage() {
           <ArrowLeft size={22} />
         </button>
         <h1 className="text-base font-bold flex-1 truncate">{hall.name}</h1>
+        {tab === 'map' && (
+          <button
+            className={`p-1.5 rounded-full active:opacity-70 ${isEditMode ? 'bg-yellow-400/30' : ''}`}
+            onClick={() => setIsEditMode(e => !e)}
+            title={isEditMode ? '閲覧モードへ' : '編集モードへ'}
+          >
+            {isEditMode ? <Eye size={20} /> : <Pencil size={20} />}
+          </button>
+        )}
       </header>
 
       {/* タブ */}
@@ -163,10 +192,12 @@ export default function FloorMapPage() {
       {/* コンテンツ */}
       {tab === 'map' && (
         <FloorMapCanvas
-          hallId={hallId!}
           islands={islands}
           machines={machines}
           notes={notes}
+          isEditMode={isEditMode}
+          onMachineMove={handleMachineMove}
+          onMachineTap={handleMachineTap}
           onIslandMove={handleIslandMove}
           onIslandEdit={openEdit}
           onIslandDelete={setDeleteTarget}
@@ -248,7 +279,18 @@ export default function FloorMapPage() {
         </div>
       )}
 
-      {/* 追加FAB */}
+      {/* 台追加FAB（編集モード・マップタブ時） */}
+      {tab === 'map' && isEditMode && (
+        <button
+          className="fixed bottom-24 right-6 w-12 h-12 rounded-full bg-emerald-600 text-white shadow-lg flex items-center justify-center active:bg-emerald-700 z-10 text-xs font-bold"
+          onClick={() => setAddMachineOpen(true)}
+          aria-label="台を追加"
+        >
+          台+
+        </button>
+      )}
+
+      {/* 島追加FAB */}
       <button
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-blue-700 text-white shadow-lg flex items-center justify-center active:bg-blue-800 z-10"
         onClick={openAdd}
@@ -373,6 +415,15 @@ export default function FloorMapPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 台追加モーダル */}
+      {addMachineOpen && islands.length > 0 && (
+        <AddMachineModal
+          islands={islands}
+          onAdd={handleAddMachine}
+          onClose={() => setAddMachineOpen(false)}
+        />
       )}
 
       {/* カレンダーエントリモーダル */}
