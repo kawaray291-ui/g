@@ -53,10 +53,13 @@ export interface Island {
 export interface Machine {
   id: string;
   islandId: string;
-  side: 0 | 1;   // 0=表, 1=裏（両面島の裏側）
-  pos: number;    // 島内の位置（0始まり）
-  number: string; // 台番号
-  modelName: string; // 機種名
+  side: 0 | 1;       // 0=表, 1=裏
+  pos: number;        // 島内の順番（0始まり）
+  number: string;     // 台番号
+  modelName: string;  // 機種名
+  shortMemo?: string; // 一言メモ（キャンバス表示用）
+  x?: number;         // キャンバス上のX座標
+  y?: number;         // キャンバス上のY座標
 }
 
 // 設定の入りやすさ: 1(入りにくい)〜5(入りやすい)
@@ -66,6 +69,17 @@ export interface MachineNote {
   machineId: string;
   settingRating?: SettingRating;
   memo: string;
+  updatedAt: string;
+}
+
+export interface CalendarEntry {
+  id: string;
+  hallId: string;
+  date: string;           // YYYY-MM-DD
+  memo: string;
+  medalDiff?: number;     // 差枚数（±）
+  avgRotation?: number;   // 平均回転率
+  queueCount?: number;    // 並び人数
   updatedAt: string;
 }
 

@@ -1,4 +1,4 @@
-import { Hall, Island, Machine, MachineNote, VisitRecord, MachineType } from './types';
+import { Hall, Island, Machine, MachineNote, VisitRecord, CalendarEntry, MachineType } from './types';
 
 // ─── ID生成 ─────────────────────────────────────────────────
 let seq = Date.now();
@@ -65,7 +65,10 @@ export const islandStore = {
     };
     write('islands', [...this.getAll(), island]);
 
-    // 台を自動生成
+    // 台を自動生成（初期位置はグリッド状に配置）
+    const CELL_W = 86; // 80px + 6px gap
+    const CELL_H = 70; // 64px + 6px gap
+    const LABEL_H = 32;
     const sides = doubleSided ? 2 : 1;
     const machines: Machine[] = [];
     for (let side = 0; side < sides; side++) {
@@ -78,6 +81,9 @@ export const islandStore = {
           pos,
           number: String(num),
           modelName: '',
+          shortMemo: '',
+          x: x + pos * CELL_W,
+          y: y + LABEL_H + side * CELL_H,
         });
       }
     }
@@ -103,8 +109,33 @@ export const machineStore = {
     read<Machine[]>('machines', []).filter(m => m.islandId === islandId),
   getById: (id: string): Machine | undefined => read<Machine[]>('machines', []).find(m => m.id === id),
 
-  update(id: string, patch: Partial<Omit<Machine, 'id' | 'islandId' | 'side' | 'pos'>>): void {
+  update(id: string, patch: Partial<Omit<Machine, 'id' | 'islandId'>>): void {
     write('machines', this.getAll().map(m => (m.id === id ? { ...m, ...patch } : m)));
+  },
+
+  /** 台を1台だけ手動追加（自由配置用） */
+  addSingle(
+    islandId: string,
+    number: string,
+    modelName: string,
+    shortMemo: string,
+    x: number,
+    y: number,
+  ): Machine {
+    const existing = this.getByIsland(islandId);
+    const machine: Machine = {
+      id: genId(),
+      islandId,
+      side: 0,
+      pos: existing.length,
+      number,
+      modelName,
+      shortMemo,
+      x,
+      y,
+    };
+    write('machines', [...this.getAll(), machine]);
+    return machine;
   },
 
   delete(id: string): void {
@@ -177,5 +208,48 @@ export const visitStore = {
 
   delete(id: string): void {
     write('visitRecords', this.getAll().filter(v => v.id !== id));
+  },
+};
+
+// ─── カレンダー記録 ───────────────────────────────────────────
+export const calendarStore = {
+  getAll: (): CalendarEntry[] => read('calendarEntries', []),
+
+  getByHall: (hallId: string): CalendarEntry[] =>
+    read<CalendarEntry[]>('calendarEntries', []).filter(e => e.hallId === hallId),
+
+  getByDate: (hallId: string, date: string): CalendarEntry | undefined =>
+    read<CalendarEntry[]>('calendarEntries', []).find(
+      e => e.hallId === hallId && e.date === date
+    ),
+
+  upsert(
+    hallId: string,
+    date: string,
+    patch: Partial<Pick<CalendarEntry, 'memo' | 'medalDiff' | 'avgRotation' | 'queueCount'>>
+  ): CalendarEntry {
+    const all = this.getAll();
+    const existing = all.find(e => e.hallId === hallId && e.date === date);
+    const entry: CalendarEntry = {
+      id: existing?.id ?? genId(),
+      hallId,
+      date,
+      memo: '',
+      ...existing,
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
+    if (existing) {
+      write('calendarEntries', all.map(e => (e.id === entry.id ? entry : e)));
+    } else {
+      write('calendarEntries', [...all, entry]);
+    }
+    return entry;
+  },
+
+  delete(hallId: string, date: string): void {
+    write('calendarEntries', this.getAll().filter(
+      e => !(e.hallId === hallId && e.date === date)
+    ));
   },
 };

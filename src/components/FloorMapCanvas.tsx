@@ -1,68 +1,94 @@
 import { useRef, useState, useCallback } from 'react';
 import { Island, Machine, MachineNote } from '../types';
-import { useNavigate } from 'react-router-dom';
+import MachineCell from './MachineCell';
 
 const CANVAS_W = 3000;
 const CANVAS_H = 2000;
-const CELL_W = 52;
-const CELL_H = 44;
-const HEADER_H = 32;
+const CELL_W = 86;
+const CELL_H = 70;
+const LABEL_H = 32;
+
+const ISLAND_COLORS = [
+  '#2563eb', '#7c3aed', '#db2777', '#d97706', '#059669',
+  '#0891b2', '#dc2626', '#16a34a', '#9333ea', '#ea580c',
+];
 
 interface Props {
-  hallId: string;
   islands: Island[];
   machines: Machine[];
   notes: MachineNote[];
+  isEditMode: boolean;
+  onMachineMove: (machineId: string, x: number, y: number) => void;
+  onMachineTap: (machineId: string) => void;
   onIslandMove: (islandId: string, x: number, y: number) => void;
   onIslandEdit: (island: Island) => void;
   onIslandDelete: (island: Island) => void;
 }
 
-function ratingColor(rating?: number): string {
-  if (!rating) return 'bg-gray-100 text-gray-700 border-gray-300';
-  if (rating >= 4) return 'bg-green-100 text-green-800 border-green-400';
-  if (rating === 3) return 'bg-yellow-50 text-yellow-800 border-yellow-300';
-  return 'bg-red-50 text-red-700 border-red-300';
+/** 機械のデフォルト座標（x/y未設定時は島の位置から計算） */
+function getMachineDefaultPos(machine: Machine, island: Island): { x: number; y: number } {
+  return {
+    x: island.x + machine.pos * CELL_W,
+    y: island.y + LABEL_H + machine.side * CELL_H,
+  };
 }
 
 export default function FloorMapCanvas({
-  hallId,
-  islands,
-  machines,
-  notes,
-  onIslandMove,
-  onIslandEdit,
-  onIslandDelete,
+  islands, machines, notes,
+  isEditMode,
+  onMachineMove, onMachineTap,
+  onIslandMove, onIslandEdit, onIslandDelete,
 }: Props) {
-  const navigate = useNavigate();
   const viewportRef = useRef<HTMLDivElement>(null);
   const [pan, setPan] = useState({ x: 20, y: 20 });
-
-  // パン操作
-  const panRef = useRef<{ startPtrX: number; startPtrY: number; startPanX: number; startPanY: number } | null>(null);
-  // 島ドラッグ
-  const islandDragRef = useRef<{
-    islandId: string;
-    startPtrX: number;
-    startPtrY: number;
-    startIslandX: number;
-    startIslandY: number;
-    moved: boolean;
-  } | null>(null);
+  const [localMachinePos, setLocalMachinePos] = useState<Record<string, { x: number; y: number }>>({});
   const [localIslandPos, setLocalIslandPos] = useState<Record<string, { x: number; y: number }>>({});
 
-  // 島の位置をlocal stateで持ち（ドラッグ中の即時反映）、
-  // ドラッグ終了時にonIslandMoveで永続化する
+  // ドラッグ状態（ref でレンダリングをトリガーしない）
+  const panRef = useRef<{
+    startPtrX: number; startPtrY: number; startPanX: number; startPanY: number;
+  } | null>(null);
+
+  const machineDragRef = useRef<{
+    machineId: string;
+    startPtrX: number; startPtrY: number;
+    startX: number; startY: number;
+    moved: boolean;
+  } | null>(null);
+
+  const islandDragRef = useRef<{
+    islandId: string;
+    startPtrX: number; startPtrY: number;
+    startX: number; startY: number;
+    moved: boolean;
+  } | null>(null);
+
+  // 島カラーマップ（順序で色割り当て）
+  const islandColorMap = new Map(
+    islands.map((isl, i) => [isl.id, ISLAND_COLORS[i % ISLAND_COLORS.length]])
+  );
+
+  // キャンバス上での実際の島座標（ドラッグ中はローカル値を使用）
   const getIslandPos = (island: Island) =>
     localIslandPos[island.id] ?? { x: island.x, y: island.y };
 
+  // キャンバス上での実際の台座標
+  const getMachinePos = (machine: Machine): { x: number; y: number } => {
+    if (localMachinePos[machine.id]) return localMachinePos[machine.id];
+    if (machine.x !== undefined && machine.y !== undefined) return { x: machine.x, y: machine.y };
+    const island = islands.find(i => i.id === machine.islandId);
+    if (!island) return { x: 0, y: 0 };
+    return getMachineDefaultPos(machine, island);
+  };
+
+  // ─── ポインターイベント ──────────────────────────────────────
+
   const handleViewportPointerDown = useCallback((e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest('[data-island]')) return;
+    // interactive 要素をタップ→パンしない
+    if ((e.target as HTMLElement).closest('[data-fl]')) return;
     panRef.current = {
-      startPtrX: e.clientX,
-      startPtrY: e.clientY,
-      startPanX: pan.x,
-      startPanY: pan.y,
+      startPtrX: e.clientX, startPtrY: e.clientY,
+      startPanX: pan.x, startPanY: pan.y,
     };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }, [pan]);
@@ -73,15 +99,29 @@ export default function FloorMapCanvas({
       const dy = e.clientY - panRef.current.startPtrY;
       setPan({ x: panRef.current.startPanX + dx, y: panRef.current.startPanY + dy });
     }
+    if (machineDragRef.current) {
+      const dx = e.clientX - machineDragRef.current.startPtrX;
+      const dy = e.clientY - machineDragRef.current.startPtrY;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) machineDragRef.current.moved = true;
+      const id = machineDragRef.current.machineId;
+      setLocalMachinePos(prev => ({
+        ...prev,
+        [id]: {
+          x: Math.max(0, machineDragRef.current!.startX + dx),
+          y: Math.max(0, machineDragRef.current!.startY + dy),
+        },
+      }));
+    }
     if (islandDragRef.current) {
       const dx = e.clientX - islandDragRef.current.startPtrX;
       const dy = e.clientY - islandDragRef.current.startPtrY;
       if (Math.abs(dx) > 4 || Math.abs(dy) > 4) islandDragRef.current.moved = true;
+      const id = islandDragRef.current.islandId;
       setLocalIslandPos(prev => ({
         ...prev,
-        [islandDragRef.current!.islandId]: {
-          x: Math.max(0, islandDragRef.current!.startIslandX + dx),
-          y: Math.max(0, islandDragRef.current!.startIslandY + dy),
+        [id]: {
+          x: Math.max(0, islandDragRef.current!.startX + dx),
+          y: Math.max(0, islandDragRef.current!.startY + dy),
         },
       }));
     }
@@ -89,6 +129,13 @@ export default function FloorMapCanvas({
 
   const handleViewportPointerUp = useCallback((_e: React.PointerEvent) => {
     panRef.current = null;
+    if (machineDragRef.current) {
+      const { machineId, moved } = machineDragRef.current;
+      if (moved && localMachinePos[machineId]) {
+        onMachineMove(machineId, localMachinePos[machineId].x, localMachinePos[machineId].y);
+      }
+      machineDragRef.current = null;
+    }
     if (islandDragRef.current) {
       const { islandId, moved } = islandDragRef.current;
       if (moved && localIslandPos[islandId]) {
@@ -96,20 +143,39 @@ export default function FloorMapCanvas({
       }
       islandDragRef.current = null;
     }
-  }, [localIslandPos, onIslandMove]);
+  }, [localMachinePos, localIslandPos, onMachineMove, onIslandMove]);
 
-  const startIslandDrag = useCallback((e: React.PointerEvent, island: Island) => {
+  // 台ドラッグ開始
+  const startMachineDrag = useCallback((e: React.PointerEvent, machine: Machine) => {
+    if (!isEditMode) return;
     e.stopPropagation();
-    const pos = getIslandPos(island);
-    islandDragRef.current = {
-      islandId: island.id,
-      startPtrX: e.clientX,
-      startPtrY: e.clientY,
-      startIslandX: pos.x,
-      startIslandY: pos.y,
+    const pos = localMachinePos[machine.id]
+      ?? (machine.x !== undefined && machine.y !== undefined
+        ? { x: machine.x, y: machine.y }
+        : (() => {
+            const isl = islands.find(i => i.id === machine.islandId);
+            return isl ? getMachineDefaultPos(machine, isl) : { x: 0, y: 0 };
+          })());
+    machineDragRef.current = {
+      machineId: machine.id,
+      startPtrX: e.clientX, startPtrY: e.clientY,
+      startX: pos.x, startY: pos.y,
       moved: false,
     };
-    (viewportRef.current as HTMLElement)?.setPointerCapture(e.pointerId);
+    viewportRef.current?.setPointerCapture(e.pointerId);
+  }, [isEditMode, localMachinePos, islands]);
+
+  // 島ラベルドラッグ開始
+  const startIslandDrag = useCallback((e: React.PointerEvent, island: Island) => {
+    e.stopPropagation();
+    const pos = localIslandPos[island.id] ?? { x: island.x, y: island.y };
+    islandDragRef.current = {
+      islandId: island.id,
+      startPtrX: e.clientX, startPtrY: e.clientY,
+      startX: pos.x, startY: pos.y,
+      moved: false,
+    };
+    viewportRef.current?.setPointerCapture(e.pointerId);
   }, [localIslandPos]);
 
   const noteMap = new Map(notes.map(n => [n.machineId, n]));
@@ -117,8 +183,8 @@ export default function FloorMapCanvas({
   return (
     <div
       ref={viewportRef}
-      className="flex-1 overflow-hidden bg-slate-200 relative no-select"
-      style={{ touchAction: 'none' }}
+      className="flex-1 overflow-hidden bg-slate-200 relative"
+      style={{ touchAction: 'none', userSelect: 'none' }}
       onPointerDown={handleViewportPointerDown}
       onPointerMove={handleViewportPointerMove}
       onPointerUp={handleViewportPointerUp}
@@ -126,125 +192,87 @@ export default function FloorMapCanvas({
       {/* キャンバス */}
       <div
         style={{
-          width: CANVAS_W,
-          height: CANVAS_H,
+          width: CANVAS_W, height: CANVAS_H,
           transform: `translate(${pan.x}px, ${pan.y}px)`,
           position: 'relative',
         }}
       >
         {/* グリッド背景 */}
-        <svg
-          className="absolute inset-0 opacity-20"
-          width={CANVAS_W}
-          height={CANVAS_H}
-          xmlns="http://www.w3.org/2000/svg"
-        >
+        <svg className="absolute inset-0 opacity-20" width={CANVAS_W} height={CANVAS_H}>
           <defs>
-            <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+            <pattern id="fl-grid" width="60" height="60" patternUnits="userSpaceOnUse">
               <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#94a3b8" strokeWidth="0.5" />
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
+          <rect width="100%" height="100%" fill="url(#fl-grid)" />
         </svg>
 
-        {/* 島 */}
+        {/* 島ラベル */}
         {islands.map(island => {
           const pos = getIslandPos(island);
-          const islandMachines = machines.filter(m => m.islandId === island.id);
-          const sides = island.doubleSided ? 2 : 1;
-          const islandWidth = island.machineCount * CELL_W;
-
+          const color = islandColorMap.get(island.id) ?? '#6b7280';
           return (
             <div
               key={island.id}
-              data-island={island.id}
-              style={{
-                position: 'absolute',
-                left: pos.x,
-                top: pos.y,
-                width: islandWidth,
-              }}
-              className="shadow-md rounded-lg overflow-visible"
+              data-fl={`island-${island.id}`}
+              style={{ position: 'absolute', left: pos.x, top: pos.y, background: color }}
+              className={[
+                'flex items-center gap-1 px-2 rounded-lg shadow h-8 min-w-[80px] max-w-[220px]',
+                isEditMode ? 'cursor-grab active:cursor-grabbing' : '',
+              ].join(' ')}
+              onPointerDown={isEditMode ? e => startIslandDrag(e, island) : undefined}
             >
-              {/* 島ヘッダー（ドラッグハンドル） */}
-              <div
-                className="flex items-center gap-1 px-2 rounded-t-lg cursor-grab active:cursor-grabbing"
-                style={{
-                  height: HEADER_H,
-                  background: island.machineType === 'pachinko' ? '#1e40af' : '#7c3aed',
-                }}
-                onPointerDown={e => startIslandDrag(e, island)}
-              >
-                <span className="text-white text-xs font-bold truncate flex-1">{island.name}</span>
-                <span className="text-white/70 text-xs">
-                  {island.machineType === 'pachinko' ? 'P' : 'S'}
-                </span>
-                <button
-                  className="text-white/80 text-xs px-1 active:text-white"
-                  onPointerDown={e => e.stopPropagation()}
-                  onClick={e => { e.stopPropagation(); onIslandEdit(island); }}
-                >
-                  編
-                </button>
-                <button
-                  className="text-white/80 text-xs px-1 active:text-red-300"
-                  onPointerDown={e => e.stopPropagation()}
-                  onClick={e => { e.stopPropagation(); onIslandDelete(island); }}
-                >
-                  削
-                </button>
-              </div>
+              <span className="text-white text-xs font-bold truncate flex-1">{island.name}</span>
+              {isEditMode && (
+                <>
+                  <button
+                    className="text-white/80 text-xs px-1 active:text-white shrink-0"
+                    onPointerDown={e => e.stopPropagation()}
+                    onClick={e => { e.stopPropagation(); onIslandEdit(island); }}
+                  >
+                    編
+                  </button>
+                  <button
+                    className="text-white/80 text-xs px-1 active:text-red-300 shrink-0"
+                    onPointerDown={e => e.stopPropagation()}
+                    onClick={e => { e.stopPropagation(); onIslandDelete(island); }}
+                  >
+                    削
+                  </button>
+                </>
+              )}
+            </div>
+          );
+        })}
 
-              {/* 台セル */}
-              <div className="border border-t-0 border-gray-300 rounded-b-lg overflow-hidden bg-white">
-                {Array.from({ length: sides }).map((_, side) => (
-                  <div key={side} className={`flex ${side === 0 && sides === 2 ? 'border-b border-gray-300' : ''}`}>
-                    {Array.from({ length: island.machineCount }).map((_, pos) => {
-                      const machine = islandMachines.find(
-                        m => m.side === side && m.pos === pos
-                      );
-                      if (!machine) return (
-                        <div
-                          key={pos}
-                          style={{ width: CELL_W, height: CELL_H }}
-                          className="border-r border-gray-200 last:border-r-0 flex items-center justify-center text-xs text-gray-300"
-                        >
-                          ?
-                        </div>
-                      );
-                      const note = noteMap.get(machine.id);
-                      const colorClass = ratingColor(note?.settingRating);
-                      return (
-                        <button
-                          key={pos}
-                          style={{ width: CELL_W, height: CELL_H }}
-                          className={`border-r border-gray-200 last:border-r-0 flex flex-col items-center justify-center border ${colorClass} active:brightness-95`}
-                          onPointerDown={e => e.stopPropagation()}
-                          onClick={() => navigate(`/halls/${hallId}/machines/${machine.id}`)}
-                        >
-                          <span className="text-xs font-bold leading-tight">{machine.number}</span>
-                          {note?.settingRating && (
-                            <span className="text-xs leading-none">
-                              {'★'.repeat(note.settingRating)}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
+        {/* 台セル */}
+        {machines.map(machine => {
+          const pos = getMachinePos(machine);
+          const color = islandColorMap.get(machine.islandId) ?? '#6b7280';
+          const note = noteMap.get(machine.id);
+          return (
+            <div
+              key={machine.id}
+              data-fl={`machine-${machine.id}`}
+              style={{ position: 'absolute', left: pos.x, top: pos.y }}
+            >
+              <MachineCell
+                machine={machine}
+                note={note}
+                islandColor={color}
+                isEditMode={isEditMode}
+                onPointerDown={e => startMachineDrag(e, machine)}
+                onClick={isEditMode ? () => {} : () => onMachineTap(machine.id)}
+              />
             </div>
           );
         })}
       </div>
 
-      {/* 操作ヒント */}
+      {/* 空ヒント */}
       {islands.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-center text-gray-400">
-            <p className="text-sm">右下の ＋ から島を追加してください</p>
-          </div>
+          <p className="text-sm text-gray-400">右下の ＋ から島を追加してください</p>
         </div>
       )}
     </div>
