@@ -1,11 +1,13 @@
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, List } from 'lucide-react';
-import { hallStore, islandStore, machineStore, noteStore } from '../store';
-import { Island, Machine, MachineNote, MachineType } from '../types';
+import { ArrowLeft, Plus, List, CalendarDays } from 'lucide-react';
+import { hallStore, islandStore, machineStore, noteStore, calendarStore } from '../store';
+import { Island, Machine, MachineNote, MachineType, CalendarEntry } from '../types';
 import FloorMapCanvas from '../components/FloorMapCanvas';
+import CalendarView from '../components/CalendarView';
+import CalendarEntryModal from '../components/CalendarEntryModal';
 
-type Tab = 'map' | 'list';
+type Tab = 'map' | 'list' | 'calendar';
 
 interface IslandFormState {
   name: string;
@@ -35,17 +37,27 @@ export default function FloorMapPage() {
     machineStore.getAll().filter(m => islands.some(i => i.id === m.islandId))
   );
   const [notes, setNotes] = useState<MachineNote[]>(() => noteStore.getAll());
+  const [calendarEntries, setCalendarEntries] = useState<CalendarEntry[]>(
+    () => calendarStore.getByHall(hallId!)
+  );
 
   const [tab, setTab] = useState<Tab>('map');
   const [modal, setModal] = useState<{ mode: 'add' | 'edit'; island?: Island } | null>(null);
   const [form, setForm] = useState<IslandFormState>(defaultForm);
   const [deleteTarget, setDeleteTarget] = useState<Island | null>(null);
 
+  // カレンダーモーダル
+  const [calendarDate, setCalendarDate] = useState<string | null>(null);
+
   function refresh() {
     const newIslands = islandStore.getByHall(hallId!);
     setIslands(newIslands);
     setMachines(machineStore.getAll().filter(m => newIslands.some(i => i.id === m.islandId)));
     setNotes(noteStore.getAll());
+  }
+
+  function refreshCalendar() {
+    setCalendarEntries(calendarStore.getByHall(hallId!));
   }
 
   function openAdd() {
@@ -122,34 +134,34 @@ export default function FloorMapPage() {
 
       {/* タブ */}
       <div className="flex bg-blue-900 text-white">
-        {(['map', 'list'] as Tab[]).map(t => (
+        {([
+          {
+            key: 'map' as Tab,
+            label: '島図',
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+              </svg>
+            ),
+          },
+          { key: 'list'     as Tab, label: '島一覧',     icon: <List size={14} /> },
+          { key: 'calendar' as Tab, label: 'カレンダー', icon: <CalendarDays size={14} /> },
+        ]).map(({ key, label, icon }) => (
           <button
-            key={t}
+            key={key}
             className={`flex-1 py-2 text-sm font-medium flex items-center justify-center gap-1 transition-colors ${
-              tab === t ? 'border-b-2 border-yellow-400 text-yellow-300' : 'text-blue-200'
+              tab === key ? 'border-b-2 border-yellow-400 text-yellow-300' : 'text-blue-200'
             }`}
-            onClick={() => setTab(t)}
+            onClick={() => setTab(key)}
           >
-            {t === 'map' ? (
-              <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
-                  <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
-                </svg>
-                島図
-              </>
-            ) : (
-              <>
-                <List size={14} />
-                島一覧
-              </>
-            )}
+            {icon}{label}
           </button>
         ))}
       </div>
 
       {/* コンテンツ */}
-      {tab === 'map' ? (
+      {tab === 'map' && (
         <FloorMapCanvas
           hallId={hallId!}
           islands={islands}
@@ -159,7 +171,18 @@ export default function FloorMapPage() {
           onIslandEdit={openEdit}
           onIslandDelete={setDeleteTarget}
         />
-      ) : (
+      )}
+
+      {tab === 'calendar' && (
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <CalendarView
+            entries={calendarEntries}
+            onDayClick={date => setCalendarDate(date)}
+          />
+        </div>
+      )}
+
+      {tab === 'list' && (
         <div className="flex-1 overflow-y-auto pb-20">
           {islands.length === 0 ? (
             <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
@@ -350,6 +373,29 @@ export default function FloorMapPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* カレンダーエントリモーダル */}
+      {calendarDate && (
+        <CalendarEntryModal
+          date={calendarDate}
+          entry={calendarEntries.find(e => e.date === calendarDate)}
+          onSave={data => {
+            calendarStore.upsert(hallId!, calendarDate, data);
+            refreshCalendar();
+            setCalendarDate(null);
+          }}
+          onDelete={() => {
+            calendarStore.delete(hallId!, calendarDate);
+            refreshCalendar();
+            setCalendarDate(null);
+          }}
+          onGoToMap={() => {
+            setTab('map');
+            setCalendarDate(null);
+          }}
+          onClose={() => setCalendarDate(null)}
+        />
       )}
 
       {/* 削除確認 */}
