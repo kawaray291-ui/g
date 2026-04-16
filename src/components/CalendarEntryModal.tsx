@@ -6,6 +6,7 @@ interface SaveData {
   memo: string;
   medalDiff?: number;
   avgRotation?: number;
+  queueCount?: number;
 }
 
 interface Props {
@@ -28,12 +29,14 @@ export default function CalendarEntryModal({
   const [memo, setMemo]               = useState(entry?.memo ?? '');
   const [medalDiff, setMedalDiff]     = useState(entry?.medalDiff?.toString() ?? '');
   const [avgRotation, setAvgRotation] = useState(entry?.avgRotation?.toString() ?? '');
+  const [queueCount, setQueueCount]   = useState(entry?.queueCount?.toString() ?? '');
 
   function handleSave() {
     onSave({
       memo,
       medalDiff:   medalDiff   !== '' ? Number(medalDiff)   : undefined,
       avgRotation: avgRotation !== '' ? Number(avgRotation) : undefined,
+      queueCount:  queueCount  !== '' ? Number(queueCount)  : undefined,
     });
   }
 
@@ -100,6 +103,18 @@ export default function CalendarEntryModal({
               placeholder="例：20.5"
               value={avgRotation}
               onChange={e => setAvgRotation(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-600">並び人数</label>
+            <input
+              type="number"
+              inputMode="numeric"
+              className={`mt-1 ${inputCls}`}
+              placeholder="例：30"
+              value={queueCount}
+              onChange={e => setQueueCount(e.target.value)}
             />
           </div>
         </div>

@@ -195,7 +195,7 @@ export const calendarStore = {
   upsert(
     hallId: string,
     date: string,
-    patch: Partial<Pick<CalendarEntry, 'memo' | 'medalDiff' | 'avgRotation'>>
+    patch: Partial<Pick<CalendarEntry, 'memo' | 'medalDiff' | 'avgRotation' | 'queueCount'>>
   ): CalendarEntry {
     const all = this.getAll();
     const existing = all.find(e => e.hallId === hallId && e.date === date);
