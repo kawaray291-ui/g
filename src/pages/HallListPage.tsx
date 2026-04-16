@@ -1,44 +1,60 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ChevronRight, Pencil, Trash2, Building2 } from 'lucide-react';
+import { Plus, Building2, Filter, X } from 'lucide-react';
 import { hallStore } from '../store';
 import { Hall } from '../types';
+import HallCard from '../components/HallCard';
+import HallFormModal, {
+  EMPTY_HALL_FORM,
+  hallToForm,
+} from '../components/HallFormModal';
 
 export default function HallListPage() {
   const navigate = useNavigate();
   const [halls, setHalls] = useState<Hall[]>(() => hallStore.getAll());
+
+  // ─── フィルター ────────────────────────────────────────────
+  const [filterChain, setFilterChain]           = useState('');
+  const [filterPrefecture, setFilterPrefecture] = useState('');
+
+  const chains = useMemo(
+    () => [...new Set(halls.map(h => h.chain).filter((c): c is string => !!c))].sort(),
+    [halls],
+  );
+  const prefectures = useMemo(
+    () => [...new Set(halls.map(h => h.prefecture).filter((p): p is string => !!p))].sort(),
+    [halls],
+  );
+  const filtered = useMemo(() =>
+    halls.filter(h =>
+      (!filterChain      || h.chain      === filterChain) &&
+      (!filterPrefecture || h.prefecture === filterPrefecture)
+    ),
+    [halls, filterChain, filterPrefecture],
+  );
+  const isFiltered = filterChain !== '' || filterPrefecture !== '';
+
+  // ─── 追加 / 編集モーダル ───────────────────────────────────
   const [modal, setModal] = useState<{ mode: 'add' | 'edit'; hall?: Hall } | null>(null);
-  const [form, setForm] = useState({ name: '', address: '', notes: '' });
-  const [deleteTarget, setDeleteTarget] = useState<Hall | null>(null);
 
   function openAdd() {
-    setForm({ name: '', address: '', notes: '' });
     setModal({ mode: 'add' });
   }
-
   function openEdit(hall: Hall) {
-    setForm({ name: hall.name, address: hall.address ?? '', notes: hall.notes ?? '' });
     setModal({ mode: 'edit', hall });
   }
-
-  function saveHall() {
-    if (!form.name.trim()) return;
+  function handleSave(data: Omit<Hall, 'id' | 'createdAt'>) {
     if (modal?.mode === 'add') {
-      hallStore.add({
-        name: form.name.trim(),
-        address: form.address.trim() || undefined,
-        notes: form.notes.trim() || undefined,
-      });
+      hallStore.add(data);
     } else if (modal?.mode === 'edit' && modal.hall) {
-      hallStore.update(modal.hall.id, {
-        name: form.name.trim(),
-        address: form.address.trim() || undefined,
-        notes: form.notes.trim() || undefined,
-      });
+      hallStore.update(modal.hall.id, data);
     }
     setHalls(hallStore.getAll());
     setModal(null);
   }
+
+  // ─── 削除 ─────────────────────────────────────────────────
+  const [deleteTarget, setDeleteTarget] = useState<Hall | null>(null);
 
   function confirmDelete() {
     if (!deleteTarget) return;
@@ -47,50 +63,71 @@ export default function HallListPage() {
     setDeleteTarget(null);
   }
 
+  // ─── 描画 ─────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full bg-gray-100">
       {/* ヘッダー */}
-      <header className="bg-blue-800 text-white px-4 py-3 flex items-center gap-2 safe-top shadow">
+      <header className="bg-blue-800 text-white px-4 py-3 flex items-center gap-2 shadow">
         <Building2 size={22} />
         <h1 className="text-lg font-bold flex-1">パチンコホール管理</h1>
+        {halls.length > 0 && (
+          <span className="text-xs text-blue-200">{filtered.length}/{halls.length}件</span>
+        )}
       </header>
 
+      {/* フィルターバー（1件以上ある場合のみ表示） */}
+      {halls.length > 0 && (
+        <div className="bg-white border-b border-gray-200 px-3 py-2 flex items-center gap-2">
+          <Filter size={13} className="text-gray-400 shrink-0" />
+          <select
+            className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 outline-none min-w-0"
+            value={filterChain}
+            onChange={e => setFilterChain(e.target.value)}
+          >
+            <option value="">系列: すべて</option>
+            {chains.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select
+            className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 outline-none min-w-0"
+            value={filterPrefecture}
+            onChange={e => setFilterPrefecture(e.target.value)}
+          >
+            <option value="">都道府県: すべて</option>
+            {prefectures.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+          {isFiltered && (
+            <button
+              className="shrink-0 text-xs text-blue-600 font-medium flex items-center gap-0.5 active:text-blue-800"
+              onClick={() => { setFilterChain(''); setFilterPrefecture(''); }}
+            >
+              <X size={12} />クリア
+            </button>
+          )}
+        </div>
+      )}
+
       {/* ホール一覧 */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pt-3 pb-24">
         {halls.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-gray-400 gap-2">
             <Building2 size={48} strokeWidth={1} />
             <p className="text-sm">ホールを追加してください</p>
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-40 text-gray-400 gap-2">
+            <Filter size={32} strokeWidth={1} />
+            <p className="text-sm">条件に一致するホールがありません</p>
+          </div>
         ) : (
-          <ul className="divide-y divide-gray-200 bg-white mt-3 mx-3 rounded-xl overflow-hidden shadow">
-            {halls.map(hall => (
-              <li key={hall.id} className="flex items-center px-4 py-3 active:bg-gray-50">
-                <button
-                  className="flex-1 text-left"
-                  onClick={() => navigate(`/halls/${hall.id}`)}
-                >
-                  <p className="font-semibold text-gray-900">{hall.name}</p>
-                  {hall.address && <p className="text-xs text-gray-500 mt-0.5">{hall.address}</p>}
-                </button>
-                <div className="flex items-center gap-1 ml-2">
-                  <button
-                    className="p-2 text-gray-400 active:text-blue-600"
-                    onClick={() => openEdit(hall)}
-                    aria-label="編集"
-                  >
-                    <Pencil size={16} />
-                  </button>
-                  <button
-                    className="p-2 text-gray-400 active:text-red-600"
-                    onClick={() => setDeleteTarget(hall)}
-                    aria-label="削除"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                  <ChevronRight size={16} className="text-gray-300" />
-                </div>
-              </li>
+          <ul>
+            {filtered.map(hall => (
+              <HallCard
+                key={hall.id}
+                hall={hall}
+                onEdit={() => openEdit(hall)}
+                onDelete={() => setDeleteTarget(hall)}
+                onClick={() => navigate(`/halls/${hall.id}`)}
+              />
             ))}
           </ul>
         )}
@@ -98,71 +135,21 @@ export default function HallListPage() {
 
       {/* 追加FAB */}
       <button
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-blue-700 text-white shadow-lg flex items-center justify-center active:bg-blue-800"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-blue-700 text-white shadow-lg flex items-center justify-center active:bg-blue-800 z-10"
         onClick={openAdd}
         aria-label="ホールを追加"
       >
         <Plus size={28} />
       </button>
 
-      {/* 追加/編集モーダル */}
+      {/* 追加 / 編集モーダル */}
       {modal && (
-        <div className="fixed inset-0 bg-black/50 flex items-end z-50" onClick={() => setModal(null)}>
-          <div
-            className="bg-white w-full rounded-t-2xl p-5 pb-8 flex flex-col gap-4"
-            onClick={e => e.stopPropagation()}
-          >
-            <h2 className="text-lg font-bold text-gray-800">
-              {modal.mode === 'add' ? 'ホールを追加' : 'ホールを編集'}
-            </h2>
-            <div className="flex flex-col gap-3">
-              <div>
-                <label className="text-sm font-medium text-gray-600">ホール名 *</label>
-                <input
-                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-base outline-none focus:border-blue-500"
-                  placeholder="例：パチンコホールA"
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">住所</label>
-                <input
-                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-base outline-none focus:border-blue-500"
-                  placeholder="例：東京都渋谷区..."
-                  value={form.address}
-                  onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">メモ</label>
-                <textarea
-                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-base outline-none focus:border-blue-500 resize-none"
-                  rows={2}
-                  placeholder="自由メモ"
-                  value={form.notes}
-                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                className="flex-1 py-3 rounded-xl border border-gray-300 text-gray-600 font-medium active:bg-gray-100"
-                onClick={() => setModal(null)}
-              >
-                キャンセル
-              </button>
-              <button
-                className="flex-1 py-3 rounded-xl bg-blue-700 text-white font-medium active:bg-blue-800 disabled:opacity-40"
-                onClick={saveHall}
-                disabled={!form.name.trim()}
-              >
-                保存
-              </button>
-            </div>
-          </div>
-        </div>
+        <HallFormModal
+          mode={modal.mode}
+          initialForm={modal.hall ? hallToForm(modal.hall) : EMPTY_HALL_FORM}
+          onSave={handleSave}
+          onClose={() => setModal(null)}
+        />
       )}
 
       {/* 削除確認 */}
@@ -171,7 +158,8 @@ export default function HallListPage() {
           <div className="bg-white w-full max-w-sm rounded-2xl p-5 flex flex-col gap-4">
             <h2 className="text-lg font-bold text-gray-800">ホールを削除</h2>
             <p className="text-sm text-gray-600">
-              「{deleteTarget.name}」とその全データ（島・台・メモ・来店記録）を削除します。この操作は取り消せません。
+              「{deleteTarget.name}」とその全データ（島・台・メモ・来店記録）を削除します。
+              この操作は取り消せません。
             </p>
             <div className="flex gap-3">
               <button
