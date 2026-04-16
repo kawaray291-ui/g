@@ -253,3 +253,9 @@ export const calendarStore = {
     ));
   },
 };
+
+// ─── 系列タグ（全ホール共通） ─────────────────────────────────
+export const chainTagStore = {
+  getAll: (): string[] => read('chainTags', []),
+  save: (tags: string[]): void => write('chainTags', tags),
+};
