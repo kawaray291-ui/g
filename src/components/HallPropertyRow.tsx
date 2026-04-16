@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ExternalLink } from 'lucide-react';
+import { CHAINS } from '../constants';
 
 // ─── 行シェル ──────────────────────────────────────────────────
 
@@ -258,5 +259,58 @@ export function PropSection({ title }: { title: string }) {
     <div className="px-4 pt-4 pb-1">
       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{title}</span>
     </div>
+  );
+}
+
+// ─── 系列セレクト（定義済み＋その他テキスト入力） ────────────
+
+export function ChainRow({ value, onSave }: {
+  value: string;
+  onSave: (v: string) => void;
+}) {
+  const isPreset = (v: string) => (CHAINS as readonly string[]).includes(v);
+
+  const initSel   = !value ? '' : isPreset(value) ? value : 'other';
+  const initCustom = !isPreset(value) ? value : '';
+
+  const [sel, setSel]       = useState(initSel);
+  const [custom, setCustom] = useState(initCustom);
+
+  function onSelChange(v: string) {
+    setSel(v);
+    if (v === '')       onSave('');
+    else if (v !== 'other') onSave(v);
+    // 'other' は custom テキストが確定するまで保存しない
+  }
+
+  function saveCustom() {
+    if (sel === 'other') onSave(custom.trim());
+  }
+
+  return (
+    <Row label="系列">
+      <div className="flex flex-col gap-1.5">
+        <select
+          className="text-sm text-gray-900 bg-transparent outline-none w-full"
+          value={sel}
+          onChange={e => onSelChange(e.target.value)}
+        >
+          <option value="">未設定</option>
+          {CHAINS.map(c => <option key={c} value={c}>{c}</option>)}
+          <option value="other">その他</option>
+        </select>
+        {sel === 'other' && (
+          <input
+            className="text-sm text-gray-900 outline-none border-b border-blue-400 bg-transparent py-0.5"
+            value={custom}
+            onChange={e => setCustom(e.target.value)}
+            onBlur={saveCustom}
+            onKeyDown={e => { if (e.key === 'Enter') saveCustom(); }}
+            placeholder="系列名を入力"
+            autoFocus
+          />
+        )}
+      </div>
+    </Row>
   );
 }
