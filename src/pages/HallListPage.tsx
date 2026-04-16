@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Building2, Filter, X, ArrowUpDown } from 'lucide-react';
-import { hallStore } from '../store';
-import { Hall } from '../types';
+import { Plus, Building2, Filter, X, ArrowUpDown, Tags } from 'lucide-react';
+import { hallStore, chainTagStore } from '../store';
+import { Hall, ChainTag } from '../types';
+import ChainManagerModal from '../components/ChainManagerModal';
 import HallCard from '../components/HallCard';
 import HallFormModal, {
   EMPTY_HALL_FORM,
@@ -12,6 +13,8 @@ import HallFormModal, {
 export default function HallListPage() {
   const navigate = useNavigate();
   const [halls, setHalls] = useState<Hall[]>(() => hallStore.getAll());
+  const [chainTags, setChainTags] = useState<ChainTag[]>(() => chainTagStore.getAll());
+  const [chainManagerOpen, setChainManagerOpen] = useState(false);
 
   // ─── フィルター ────────────────────────────────────────────
   const [filterChain, setFilterChain]           = useState('');
@@ -86,6 +89,13 @@ export default function HallListPage() {
         {halls.length > 0 && (
           <span className="text-xs text-blue-200">{filtered.length}/{halls.length}件</span>
         )}
+        <button
+          className="p-2 text-blue-200 active:text-white"
+          onClick={() => setChainManagerOpen(true)}
+          title="系列管理"
+        >
+          <Tags size={20} />
+        </button>
       </header>
 
       {/* フィルター・並び替えバー（1件以上ある場合のみ表示） */}
@@ -154,6 +164,7 @@ export default function HallListPage() {
               <HallCard
                 key={hall.id}
                 hall={hall}
+                chainTags={chainTags}
                 onEdit={() => openEdit(hall)}
                 onDelete={() => setDeleteTarget(hall)}
                 onClick={() => navigate(`/halls/${hall.id}`)}
@@ -171,6 +182,16 @@ export default function HallListPage() {
       >
         <Plus size={28} />
       </button>
+
+      {/* 系列管理モーダル */}
+      {chainManagerOpen && (
+        <ChainManagerModal
+          onClose={() => {
+            setChainManagerOpen(false);
+            setChainTags(chainTagStore.getAll());  // タグ変更をカードに反映
+          }}
+        />
+      )}
 
       {/* 追加 / 編集モーダル */}
       {modal && (
