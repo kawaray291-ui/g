@@ -4,9 +4,11 @@ import { ArrowLeft, Map } from 'lucide-react';
 import { hallStore, calendarStore } from '../store';
 import { Hall, CalendarEntry, ParkingType } from '../types';
 import {
-  TextRow, NumberRow, ToggleRow, LinkRow, SelectRow,
-  AnniversaryRow, PropSection, ChainRow,
+  TextRow, NumberRow, ToggleRow, SelectRow,
+  AnniversaryRow, PropSection,
 } from '../components/HallPropertyRow';
+import ChainTagManager from '../components/ChainTagManager';
+import HallLinkEditor from '../components/HallLinkEditor';
 import CalendarView from '../components/CalendarView';
 import CalendarEntryModal from '../components/CalendarEntryModal';
 import { PREFECTURES } from '../constants';
@@ -16,8 +18,6 @@ const PARKING_OPTIONS = [
   { value: 'paid', label: '有料' },
   { value: 'none', label: 'なし' },
 ];
-
-const PREDEFINED_LINKS = ['MAP', 'p-world', 'ホールナビ', 'みんパチ', 'アナスロ', 'クロロ'] as const;
 
 export default function HallDetailPage() {
   const { hallId } = useParams<{ hallId: string }>();
@@ -41,31 +41,10 @@ export default function HallDetailPage() {
     );
   }
 
-  // ─── ホール更新 ────────────────────────────────────────────
-
   function update(patch: Partial<Omit<Hall, 'id' | 'createdAt'>>) {
     hallStore.update(hall!.id, patch);
     setHall(prev => ({ ...prev!, ...patch }));
   }
-
-  // ─── リンク ───────────────────────────────────────────────
-
-  function getLink(label: string): string {
-    return hall!.links?.find(l => l.label === label)?.url ?? '';
-  }
-
-  function saveLink(label: string, url: string) {
-    const existing = hall!.links ?? [];
-    const filtered = existing.filter(l => l.label !== label);
-    update({ links: url ? [...filtered, { label, url }] : filtered });
-  }
-
-  // カスタムリンク（定義済み以外）
-  const customLinks = (hall!.links ?? []).filter(
-    l => !PREDEFINED_LINKS.includes(l.label as typeof PREDEFINED_LINKS[number])
-  );
-
-  // ─── メモ（自動保存） ─────────────────────────────────────
 
   function handleMemoChange(text: string) {
     setMemo(text);
@@ -74,8 +53,6 @@ export default function HallDetailPage() {
       hallStore.update(hall!.id, { notes: text });
     }, 800);
   }
-
-  // ─── カレンダー ───────────────────────────────────────────
 
   function refreshCalendar() {
     setCalendarEntries(calendarStore.getByHall(hallId!));
@@ -95,8 +72,7 @@ export default function HallDetailPage() {
           className="flex items-center gap-1 text-sm text-blue-600 font-medium bg-blue-50 px-3 py-1.5 rounded-full active:bg-blue-100"
           onClick={() => navigate(`/halls/${hallId}/map`)}
         >
-          <Map size={14} />
-          島図
+          <Map size={14} />島図
         </button>
       </header>
 
@@ -106,10 +82,13 @@ export default function HallDetailPage() {
         {/* ─── プロパティ ─── */}
         <div className="bg-white mt-3 mx-3 rounded-xl shadow overflow-hidden">
           <PropSection title="基本情報" />
-          <ChainRow
+
+          {/* ② 系列タグ */}
+          <ChainTagManager
             value={hall.chain ?? ''}
             onSave={v => update({ chain: v || undefined })}
           />
+
           <SelectRow
             label="県"
             value={hall.prefecture}
@@ -175,29 +154,17 @@ export default function HallDetailPage() {
             onChange={v => update({ parking: v as ParkingType | undefined })}
           />
 
+          {/* ③ 自由リンク */}
           <PropSection title="リンク" />
-          {PREDEFINED_LINKS.map(label => (
-            <LinkRow
-              key={label}
-              label={label}
-              url={getLink(label)}
-              onSave={url => saveLink(label, url)}
-            />
-          ))}
-          {customLinks.map(link => (
-            <LinkRow
-              key={link.label}
-              label={link.label}
-              url={link.url}
-              onSave={url => saveLink(link.label, url)}
-            />
-          ))}
+          <HallLinkEditor
+            links={hall.links ?? []}
+            onSave={links => update({ links })}
+          />
         </div>
 
         {/* ─── カレンダー ─── */}
         <div className="mt-4 mx-3">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1 mb-1">カレンダー</p>
-          {/* CalendarView は flex-1 h-full 前提のため高さ固定コンテナに収める */}
           <div className="bg-white rounded-xl shadow overflow-hidden" style={{ height: 520 }}>
             <CalendarView
               entries={calendarEntries}
@@ -206,13 +173,13 @@ export default function HallDetailPage() {
           </div>
         </div>
 
-        {/* ─── 自由メモ ─── */}
+        {/* ─── 自由メモ（① 2000px / スクロールなし） ─── */}
         <div className="mt-4 mx-3">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1 mb-1">メモ</p>
           <div className="bg-white rounded-xl shadow p-4">
             <textarea
-              className="w-full text-sm text-gray-800 outline-none resize-none placeholder-gray-300 leading-relaxed min-h-[200px]"
-              rows={10}
+              className="w-full text-sm text-gray-800 outline-none resize-none placeholder-gray-300 leading-relaxed"
+              style={{ minHeight: '2000px', overflow: 'hidden' }}
               placeholder="ホールについての自由メモ（自動保存されます）"
               value={memo}
               onChange={e => handleMemoChange(e.target.value)}
