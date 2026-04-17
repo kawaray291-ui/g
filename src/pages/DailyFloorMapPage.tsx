@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { hallStore, dailyMachineStore, dailySnapshotStore } from '../store';
+import { SETTING_COLORS } from '../constants';
 import { Machine, DailyMachineData, DailySnapshot } from '../types';
 import DailyFloorMapCanvas from '../components/DailyFloorMapCanvas';
 import DailyMachineModal from '../components/DailyMachineModal';
@@ -129,18 +130,17 @@ export default function DailyFloorMapPage() {
       </div>
 
       {/* 凡例 */}
-      <div className="bg-indigo-50 px-4 py-1.5 flex items-center gap-3 border-b border-indigo-100 text-xs text-gray-500 flex-wrap">
-        {([1, 2, 3, 4, 5] as const).map(r => (
-          <span key={r} className="flex items-center gap-1">
-            <span className={`w-2 h-2 rounded-full ${
-              r === 1 ? 'bg-red-400' : r === 2 ? 'bg-orange-400' : r === 3 ? 'bg-yellow-400' : r === 4 ? 'bg-lime-400' : 'bg-green-500'
-            }`} />
-            設定{r}
+      <div className="bg-indigo-50 px-3 py-1.5 flex items-center gap-2 border-b border-indigo-100 text-xs text-gray-500 flex-wrap">
+        <span className="text-gray-400 shrink-0">確定■ 推測●</span>
+        {([1, 2, 3, 4, 5, 6, 7] as const).map(r => (
+          <span key={r} className="flex items-center gap-0.5">
+            <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: SETTING_COLORS[r].bg }} />
+            <span>{SETTING_COLORS[r].label}</span>
           </span>
         ))}
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-0.5">
           <span className="w-2 h-2 rounded-full bg-blue-300" />
-          データあり
+          推測のみ
         </span>
       </div>
 

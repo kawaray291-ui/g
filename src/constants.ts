@@ -1,3 +1,14 @@
+/** 設定推測・確定設定の色定義 (1〜6 + 特殊=7) */
+export const SETTING_COLORS: Record<number, { bg: string; fg: string; label: string }> = {
+  1: { bg: '#1f2937', fg: '#ffffff', label: '1' },
+  2: { bg: '#22c55e', fg: '#ffffff', label: '2' },
+  3: { bg: '#f97316', fg: '#ffffff', label: '3' },
+  4: { bg: '#ef4444', fg: '#ffffff', label: '4' },
+  5: { bg: '#a855f7', fg: '#ffffff', label: '5' },
+  6: { bg: '#f59e0b', fg: '#1f2937', label: '6' },
+  7: { bg: '#ec4899', fg: '#ffffff', label: '特殊' },
+};
+
 export const CHAIN_PRESET_COLORS = [
   '#ef4444', '#f97316', '#f59e0b', '#eab308',
   '#84cc16', '#22c55e', '#14b8a6', '#06b6d4',

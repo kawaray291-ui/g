@@ -109,7 +109,8 @@ export interface DailyMachineData {
   hallId: string;
   machineId: string;
   date: string;              // YYYY-MM-DD
-  settingRating?: SettingRating;
+  settingRating?: SettingRating;   // 設定推測
+  confirmedSetting?: SettingRating; // 確定設定
   medalDiff?: number;        // 差枚数（±）
   rotationRate?: number;     // 回転率
   memo?: string;

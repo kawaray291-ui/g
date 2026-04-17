@@ -1,28 +1,17 @@
 import { useState } from 'react';
 import { Machine, DailyMachineData, SettingRating } from '../types';
+import { SETTING_COLORS } from '../constants';
 
 interface Props {
   machine: Machine;
   daily?: DailyMachineData;
   date: string;
-  onSave: (patch: Partial<Pick<DailyMachineData, 'settingRating' | 'medalDiff' | 'rotationRate' | 'memo'>>) => void;
+  onSave: (patch: Partial<Pick<DailyMachineData, 'settingRating' | 'confirmedSetting' | 'medalDiff' | 'rotationRate' | 'memo'>>) => void;
   onDelete: () => void;
   onClose: () => void;
 }
 
 const RATINGS: SettingRating[] = [1, 2, 3, 4, 5, 6, 7];
-const RATING_LABEL: Record<SettingRating, string> = {
-  1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '特殊',
-};
-const RATING_COLOR: Record<SettingRating, string> = {
-  1: 'bg-red-500 text-white',
-  2: 'bg-orange-400 text-white',
-  3: 'bg-yellow-400 text-gray-800',
-  4: 'bg-lime-500 text-white',
-  5: 'bg-green-600 text-white',
-  6: 'bg-emerald-700 text-white',
-  7: 'bg-purple-500 text-white',
-};
 const RATING_INACTIVE = 'bg-gray-100 text-gray-500 border border-gray-300';
 
 function formatDate(dateStr: string): string {
@@ -30,8 +19,36 @@ function formatDate(dateStr: string): string {
   return `${y}年${m}月${d}日`;
 }
 
+function RatingButtons({
+  value,
+  onChange,
+}: {
+  value: SettingRating | undefined;
+  onChange: (v: SettingRating | undefined) => void;
+}) {
+  return (
+    <div className="flex gap-1 mt-1.5">
+      {RATINGS.map(r => {
+        const c = SETTING_COLORS[r];
+        const active = value === r;
+        return (
+          <button
+            key={r}
+            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${active ? '' : RATING_INACTIVE}`}
+            style={active ? { backgroundColor: c.bg, color: c.fg } : {}}
+            onClick={() => onChange(value === r ? undefined : r)}
+          >
+            {c.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function DailyMachineModal({ machine, daily, date, onSave, onDelete, onClose }: Props) {
   const [rating, setRating] = useState<SettingRating | undefined>(daily?.settingRating);
+  const [confirmed, setConfirmed] = useState<SettingRating | undefined>(daily?.confirmedSetting);
   const [medalDiff, setMedalDiff] = useState(daily?.medalDiff?.toString() ?? '');
   const [rotationRate, setRotationRate] = useState(daily?.rotationRate?.toString() ?? '');
   const [memo, setMemo] = useState(daily?.memo ?? '');
@@ -39,6 +56,7 @@ export default function DailyMachineModal({ machine, daily, date, onSave, onDele
   function handleSave() {
     onSave({
       settingRating: rating,
+      confirmedSetting: confirmed,
       medalDiff: medalDiff !== '' ? Number(medalDiff) : undefined,
       rotationRate: rotationRate !== '' ? Number(rotationRate) : undefined,
       memo: memo.trim() || undefined,
@@ -72,19 +90,13 @@ export default function DailyMachineModal({ machine, daily, date, onSave, onDele
           {/* 設定推測 */}
           <div>
             <label className="text-sm font-medium text-gray-600">設定推測</label>
-            <div className="flex gap-1.5 mt-1.5">
-              {RATINGS.map(r => (
-                <button
-                  key={r}
-                  className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
-                    rating === r ? RATING_COLOR[r] : RATING_INACTIVE
-                  }`}
-                  onClick={() => setRating(rating === r ? undefined : r)}
-                >
-                  {RATING_LABEL[r]}
-                </button>
-              ))}
-            </div>
+            <RatingButtons value={rating} onChange={setRating} />
+          </div>
+
+          {/* 確定設定 */}
+          <div>
+            <label className="text-sm font-medium text-gray-600">確定設定</label>
+            <RatingButtons value={confirmed} onChange={setConfirmed} />
           </div>
 
           {/* 差枚数 */}

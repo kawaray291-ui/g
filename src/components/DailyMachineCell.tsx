@@ -1,4 +1,5 @@
 import { Machine, DailyMachineData } from '../types';
+import { SETTING_COLORS } from '../constants';
 
 interface Props {
   machine: Machine;
@@ -7,20 +8,12 @@ interface Props {
   onClick: () => void;
 }
 
-const RATING_DOT: Record<number, string> = {
-  1: 'bg-red-400',
-  2: 'bg-orange-400',
-  3: 'bg-yellow-400',
-  4: 'bg-lime-400',
-  5: 'bg-green-500',
-  6: 'bg-emerald-600',
-  7: 'bg-purple-500',
-};
-
 export default function DailyMachineCell({ machine, daily, islandColor, onClick }: Props) {
-  const dotColor = daily?.settingRating ? RATING_DOT[daily.settingRating] : '';
-  const hasDailyData = daily && (
+  const confirmed = daily?.confirmedSetting ? SETTING_COLORS[daily.confirmedSetting] : null;
+  const predictionColor = daily?.settingRating ? SETTING_COLORS[daily.settingRating] : null;
+  const hasData = daily && (
     daily.settingRating !== undefined ||
+    daily.confirmedSetting !== undefined ||
     daily.medalDiff !== undefined ||
     daily.rotationRate !== undefined ||
     daily.memo
@@ -28,52 +21,71 @@ export default function DailyMachineCell({ machine, daily, islandColor, onClick 
 
   return (
     <div
-      className="w-20 bg-white rounded-lg shadow border border-gray-200 overflow-hidden select-none cursor-pointer active:brightness-95"
-      style={{ borderTop: `3px solid ${islandColor}` }}
+      className="w-20 rounded-lg shadow border border-gray-200 overflow-hidden select-none cursor-pointer active:brightness-95"
+      style={{
+        borderTop: `3px solid ${islandColor}`,
+        backgroundColor: confirmed?.bg ?? 'white',
+      }}
       onClick={onClick}
     >
       <div className="px-1.5 py-1 flex flex-col gap-0.5 relative min-h-[56px]">
-        {/* 設定評価ドット */}
-        {dotColor && (
+        {/* 設定推測ドット（確定がない場合のみ、確定ある場合は確定色で背景が塗られているのでドット不要） */}
+        {predictionColor && !confirmed && (
           <span
-            className={`absolute top-1 right-1 w-2 h-2 rounded-full ${dotColor}`}
-            title={`設定推測: ${daily?.settingRating === 7 ? '特殊' : daily?.settingRating}`}
+            className="absolute top-1 right-1 w-2 h-2 rounded-full"
+            style={{ backgroundColor: predictionColor.bg }}
+            title={`推測: ${predictionColor.label}`}
           />
         )}
-        {/* データ入力済みインジケータ（評価なし） */}
-        {hasDailyData && !dotColor && (
+        {/* 推測のみあり（設定なし） */}
+        {hasData && !predictionColor && !confirmed && (
           <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-300" />
         )}
 
         {/* 台番号 */}
-        <p className="text-sm font-bold text-gray-900 leading-tight truncate pr-3">
+        <p
+          className="text-sm font-bold leading-tight truncate pr-3"
+          style={{ color: confirmed?.fg ?? '#111827' }}
+        >
           {machine.number}
         </p>
 
         {/* 機種名 */}
         {machine.modelName && (
-          <p className="text-xs text-gray-500 leading-none truncate">
+          <p
+            className="text-xs leading-none truncate"
+            style={{ color: confirmed ? confirmed.fg + 'cc' : '#6b7280' }}
+          >
             {machine.modelName}
           </p>
         )}
 
         {/* 差枚数 */}
         {daily?.medalDiff !== undefined && (
-          <p className={`text-xs font-medium leading-none ${daily.medalDiff >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
+          <p
+            className="text-xs font-medium leading-none"
+            style={{ color: confirmed ? confirmed.fg : daily.medalDiff >= 0 ? '#2563eb' : '#ef4444' }}
+          >
             {daily.medalDiff >= 0 ? '+' : ''}{daily.medalDiff.toLocaleString()}
           </p>
         )}
 
         {/* 回転数 */}
         {daily?.rotationRate !== undefined && (
-          <p className="text-xs text-teal-600 leading-none">
+          <p
+            className="text-xs leading-none"
+            style={{ color: confirmed ? confirmed.fg + 'cc' : '#0d9488' }}
+          >
             {daily.rotationRate}回
           </p>
         )}
 
         {/* メモ */}
         {daily?.memo && (
-          <p className="text-xs text-gray-400 leading-none truncate italic">
+          <p
+            className="text-xs leading-none truncate italic"
+            style={{ color: confirmed ? confirmed.fg + '99' : '#9ca3af' }}
+          >
             {daily.memo}
           </p>
         )}
