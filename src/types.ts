@@ -140,3 +140,18 @@ export interface DailySnapshot {
   machines: Machine[];
   createdAt: string;
 }
+
+export interface Maker {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface MachineModel {
+  id: string;
+  name: string;
+  machineType: MachineType;
+  makerId?: string;
+  notes?: string;
+  createdAt: string;
+}

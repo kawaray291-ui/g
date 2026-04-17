@@ -1,4 +1,4 @@
-import { Hall, Island, Machine, MachineNote, VisitRecord, CalendarEntry, MachineType, ChainTag, DailyMachineData, DailySnapshot, MediaSource, EventTemplate } from './types';
+import { Hall, Island, Machine, MachineNote, VisitRecord, CalendarEntry, MachineType, ChainTag, DailyMachineData, DailySnapshot, MediaSource, EventTemplate, Maker, MachineModel } from './types';
 
 // ─── ID生成 ─────────────────────────────────────────────────
 let seq = Date.now();
@@ -437,5 +437,46 @@ export const registeredFloorMapStore = {
     const all = read<Record<string, string[]>>('registeredFloorMaps', {});
     const dates = (all[hallId] ?? []).filter(d => d !== date);
     write('registeredFloorMaps', { ...all, [hallId]: dates });
+  },
+};
+
+// ─── メーカー ────────────────────────────────────────────────
+export const makerStore = {
+  getAll(): Maker[] { return read('makers', []); },
+
+  add(name: string): Maker {
+    const item: Maker = { id: genId(), name, createdAt: new Date().toISOString() };
+    write('makers', [...this.getAll(), item]);
+    return item;
+  },
+
+  update(id: string, name: string): void {
+    write('makers', this.getAll().map(m => m.id === id ? { ...m, name } : m));
+  },
+
+  delete(id: string): void {
+    write('makers', this.getAll().filter(m => m.id !== id));
+  },
+};
+
+// ─── 台モデル ────────────────────────────────────────────────
+export const machineModelStore = {
+  getAll(): MachineModel[] { return read('machineModels', []); },
+
+  add(name: string, machineType: MachineType, makerId?: string, notes?: string): MachineModel {
+    const item: MachineModel = {
+      id: genId(), name, machineType, makerId, notes,
+      createdAt: new Date().toISOString(),
+    };
+    write('machineModels', [...this.getAll(), item]);
+    return item;
+  },
+
+  update(id: string, patch: Partial<Omit<MachineModel, 'id' | 'createdAt'>>): void {
+    write('machineModels', this.getAll().map(m => m.id === id ? { ...m, ...patch } : m));
+  },
+
+  delete(id: string): void {
+    write('machineModels', this.getAll().filter(m => m.id !== id));
   },
 };

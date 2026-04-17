@@ -7,6 +7,8 @@ import DailyFloorMapPage from './pages/DailyFloorMapPage';
 import MachineDetailPage from './pages/MachineDetailPage';
 import EventDBPage from './pages/EventDBPage';
 import MachineDBPage from './pages/MachineDBPage';
+import MakerDBPage from './pages/MakerDBPage';
+import MachineModelDBPage from './pages/MachineModelDBPage';
 
 export default function App() {
   return (
@@ -20,6 +22,8 @@ export default function App() {
         <Route path="/halls/:hallId/machines/:machineId" element={<MachineDetailPage />} />
         <Route path="/events" element={<EventDBPage />} />
         <Route path="/machine-db" element={<MachineDBPage />} />
+        <Route path="/machine-db/makers" element={<MakerDBPage />} />
+        <Route path="/machine-db/machines" element={<MachineModelDBPage />} />
       </Routes>
     </BrowserRouter>
   );
