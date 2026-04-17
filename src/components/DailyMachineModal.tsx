@@ -6,7 +6,7 @@ interface Props {
   machine: Machine;
   daily?: DailyMachineData;
   date: string;
-  onSave: (patch: Partial<Pick<DailyMachineData, 'settingRating' | 'confirmedSetting' | 'medalDiff' | 'rotationRate' | 'memo'>>) => void;
+  onSave: (patch: Partial<Pick<DailyMachineData, 'settingRating' | 'confirmedSetting' | 'medalDiff' | 'rotationRate' | 'memo' | 'machineStatus'>>) => void;
   onDelete: () => void;
   onClose: () => void;
 }
@@ -52,6 +52,7 @@ export default function DailyMachineModal({ machine, daily, date, onSave, onDele
   const [medalDiff, setMedalDiff] = useState(daily?.medalDiff?.toString() ?? '');
   const [rotationRate, setRotationRate] = useState(daily?.rotationRate?.toString() ?? '');
   const [memo, setMemo] = useState(daily?.memo ?? '');
+  const [machineStatus, setMachineStatus] = useState<'new' | 'moved' | undefined>(daily?.machineStatus);
 
   function handleSave() {
     onSave({
@@ -60,6 +61,7 @@ export default function DailyMachineModal({ machine, daily, date, onSave, onDele
       medalDiff: medalDiff !== '' ? Number(medalDiff) : undefined,
       rotationRate: rotationRate !== '' ? Number(rotationRate) : undefined,
       memo: memo.trim() || undefined,
+      machineStatus,
     });
   }
 
@@ -87,6 +89,30 @@ export default function DailyMachineModal({ machine, daily, date, onSave, onDele
 
         {/* フォーム */}
         <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-4">
+          {/* 新台・移動台 */}
+          <div>
+            <label className="text-sm font-medium text-gray-600">台の状態</label>
+            <div className="flex gap-2 mt-1.5">
+              {(['new', 'moved'] as const).map(s => {
+                const active = machineStatus === s;
+                const label = s === 'new' ? '新台' : '移動台';
+                return (
+                  <button
+                    key={s}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
+                      active
+                        ? 'bg-red-500 text-white border-red-500'
+                        : 'bg-white text-gray-500 border-gray-300 active:bg-gray-50'
+                    }`}
+                    onClick={() => setMachineStatus(machineStatus === s ? undefined : s)}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* 設定推測 */}
           <div>
             <label className="text-sm font-medium text-gray-600">設定推測</label>

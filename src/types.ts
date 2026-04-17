@@ -114,6 +114,7 @@ export interface DailyMachineData {
   medalDiff?: number;        // 差枚数（±）
   rotationRate?: number;     // 回転率
   memo?: string;
+  machineStatus?: 'new' | 'moved'; // 新台・移動台フラグ
   updatedAt: string;
 }
 

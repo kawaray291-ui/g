@@ -286,7 +286,7 @@ export const dailyMachineStore = {
     hallId: string,
     machineId: string,
     date: string,
-    patch: Partial<Pick<DailyMachineData, 'settingRating' | 'confirmedSetting' | 'medalDiff' | 'rotationRate' | 'memo'>>
+    patch: Partial<Pick<DailyMachineData, 'settingRating' | 'confirmedSetting' | 'medalDiff' | 'rotationRate' | 'memo' | 'machineStatus'>>
   ): DailyMachineData {
     const all = this.getAll();
     const existing = all.find(
