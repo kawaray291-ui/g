@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Building2, CalendarDays, Settings } from 'lucide-react';
+import { Building2, CalendarDays, Database, Settings } from 'lucide-react';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -42,6 +42,19 @@ export default function HomePage() {
           <div className="text-left">
             <p className="text-lg font-bold text-gray-800">イベントDB</p>
             <p className="text-sm text-gray-500 mt-0.5">媒体・イベントテンプレートを管理</p>
+          </div>
+        </button>
+
+        <button
+          className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-gray-200 flex items-center gap-5 px-6 py-7 active:bg-gray-50 transition-colors"
+          onClick={() => navigate('/machine-db')}
+        >
+          <div className="w-14 h-14 rounded-xl bg-teal-100 flex items-center justify-center shrink-0">
+            <Database size={30} className="text-teal-600" />
+          </div>
+          <div className="text-left">
+            <p className="text-lg font-bold text-gray-800">台情報DB</p>
+            <p className="text-sm text-gray-500 mt-0.5">メーカー・機種情報を管理</p>
           </div>
         </button>
       </div>
