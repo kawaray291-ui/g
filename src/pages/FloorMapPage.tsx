@@ -44,10 +44,18 @@ export default function FloorMapPage() {
   const [form, setForm] = useState<IslandFormState>(defaultForm);
   const [deleteTarget, setDeleteTarget] = useState<Island | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const snapshotDates = dailySnapshotStore
-    .getDatesWithSnapshot(hallId!)
-    ? Array.from(dailySnapshotStore.getDatesWithSnapshot(hallId!)).sort((a, b) => b.localeCompare(a))
-    : [];
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [registerDate, setRegisterDate] = useState(() => {
+    const t = new Date();
+    return [t.getFullYear(), String(t.getMonth() + 1).padStart(2, '0'), String(t.getDate()).padStart(2, '0')].join('-');
+  });
+  const [snapshotDates, setSnapshotDates] = useState<string[]>(() =>
+    Array.from(dailySnapshotStore.getDatesWithSnapshot(hallId!)).sort((a, b) => b.localeCompare(a))
+  );
+
+  function refreshSnapshotDates() {
+    setSnapshotDates(Array.from(dailySnapshotStore.getDatesWithSnapshot(hallId!)).sort((a, b) => b.localeCompare(a)));
+  }
 
   function refresh() {
     const newIslands = islandStore.getByHall(hallId!);
@@ -143,6 +151,12 @@ export default function FloorMapPage() {
           <ArrowLeft size={22} />
         </button>
         <h1 className="text-base font-bold flex-1 truncate">{hall.name}</h1>
+        <button
+          className="flex items-center gap-1 text-xs text-blue-200 bg-blue-700 px-2.5 py-1.5 rounded-full active:bg-blue-600 shrink-0"
+          onClick={() => setRegisterOpen(true)}
+        >
+          <Plus size={13} />島図を保存
+        </button>
         {snapshotDates.length > 0 && (
           <button
             className="flex items-center gap-1 text-xs text-blue-200 bg-blue-700 px-2.5 py-1.5 rounded-full active:bg-blue-600 shrink-0"
@@ -415,6 +429,52 @@ export default function FloorMapPage() {
           onAdd={handleAddMachine}
           onClose={() => setAddMachineOpen(false)}
         />
+      )}
+
+      {/* 島図を保存モーダル */}
+      {registerOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-end z-50" onClick={() => setRegisterOpen(false)}>
+          <div
+            className="bg-white w-full rounded-t-2xl p-5 pb-8 flex flex-col gap-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-gray-800">過去の島図に登録</h2>
+              <button className="text-gray-400 active:text-gray-600 p-1 text-lg" onClick={() => setRegisterOpen(false)}>
+                ✕
+              </button>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">日付</label>
+              <input
+                type="date"
+                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-base outline-none focus:border-blue-500"
+                value={registerDate}
+                onChange={e => setRegisterDate(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                className="flex-1 py-3 rounded-xl border border-gray-300 text-gray-600 font-medium"
+                onClick={() => setRegisterOpen(false)}
+              >
+                キャンセル
+              </button>
+              <button
+                className="flex-1 py-3 rounded-xl bg-blue-700 text-white font-medium disabled:opacity-40"
+                disabled={!registerDate}
+                onClick={() => {
+                  dailySnapshotStore.createFromTemplate(hallId!, registerDate);
+                  refreshSnapshotDates();
+                  setRegisterOpen(false);
+                  navigate(`/halls/${hallId}/map/daily/${registerDate}`);
+                }}
+              >
+                登録して開く
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 過去の島図モーダル */}
