@@ -55,11 +55,11 @@ export default function CalendarEntryModal({
           <h2 className="text-base font-bold text-gray-800">{formatDate(date)}</h2>
           <div className="flex items-center gap-2">
             <button
-              className="flex items-center gap-1 text-xs text-indigo-600 font-medium bg-indigo-50 px-3 py-1.5 rounded-full active:bg-indigo-100"
+              className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium bg-indigo-50 px-4 py-2 rounded-full active:bg-indigo-100"
               onClick={onOpenDailyMap}
             >
-              <Map size={13} />
-              島図を入力
+              <Map size={15} />
+              島図
             </button>
             <button className="text-gray-400 active:text-gray-600 p-1 text-lg" onClick={onClose}>
               ✕
