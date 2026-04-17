@@ -1,7 +1,7 @@
 export type MachineType = 'pachinko' | 'slot';
 export type ParkingType = 'free' | 'paid' | 'none';
 export type ClosingStatus = '休業' | '閉店';
-export type SettingRating = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type SettingRating = 1 | 2 | 3 | 4 | 5;
 
 // レートごとの台数
 export interface HallRates {
@@ -90,8 +90,21 @@ export interface CalendarEntry {
   medalDiff?: number;     // 差枚数（±）
   avgRotation?: number;   // 平均回転率
   queueCount?: number;    // 並び人数
-  eventTemplateId?: string;
+  eventTemplateIds?: string[];  // 選択済みイベントID（複数）
   updatedAt: string;
+}
+
+export interface MediaSource {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface EventTemplate {
+  id: string;
+  mediaSourceId: string;
+  name: string;
+  createdAt: string;
 }
 
 export interface VisitRecord {
@@ -110,26 +123,11 @@ export interface DailyMachineData {
   hallId: string;
   machineId: string;
   date: string;              // YYYY-MM-DD
-  settingRating?: SettingRating;   // 設定推測
-  confirmedSetting?: SettingRating; // 確定設定
+  settingRating?: SettingRating;
   medalDiff?: number;        // 差枚数（±）
   rotationRate?: number;     // 回転率
   memo?: string;
-  machineStatus?: 'new' | 'moved'; // 新台・移動台フラグ
   updatedAt: string;
-}
-
-export interface MediaSource {
-  id: string;
-  name: string;
-  createdAt: string;
-}
-
-export interface EventTemplate {
-  id: string;
-  mediaSourceId: string;
-  name: string;
-  createdAt: string;
 }
 
 /** 初回アクセス時に雛型から作るスナップショット（以降は雛型変更の影響を受けない） */

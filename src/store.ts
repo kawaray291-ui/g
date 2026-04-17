@@ -226,7 +226,7 @@ export const calendarStore = {
   upsert(
     hallId: string,
     date: string,
-    patch: Partial<Pick<CalendarEntry, 'memo' | 'medalDiff' | 'avgRotation' | 'queueCount' | 'eventTemplateId'>>
+    patch: Partial<Pick<CalendarEntry, 'memo' | 'medalDiff' | 'avgRotation' | 'queueCount' | 'eventTemplateIds'>>
   ): CalendarEntry {
     const all = this.getAll();
     const existing = all.find(e => e.hallId === hallId && e.date === date);
@@ -286,7 +286,7 @@ export const dailyMachineStore = {
     hallId: string,
     machineId: string,
     date: string,
-    patch: Partial<Pick<DailyMachineData, 'settingRating' | 'confirmedSetting' | 'medalDiff' | 'rotationRate' | 'memo' | 'machineStatus'>>
+    patch: Partial<Pick<DailyMachineData, 'settingRating' | 'medalDiff' | 'rotationRate' | 'memo'>>
   ): DailyMachineData {
     const all = this.getAll();
     const existing = all.find(
@@ -318,13 +318,6 @@ export const dailyMachineStore = {
       )
     );
   },
-
-  deleteByHallDate(hallId: string, date: string): void {
-    write(
-      'dailyMachineData',
-      this.getAll().filter(d => !(d.hallId === hallId && d.date === date))
-    );
-  },
 };
 
 // ─── 日付別島図スナップショット ───────────────────────────────
@@ -353,14 +346,6 @@ export const dailySnapshotStore = {
   /** スナップショットを取得、なければ雛型からコピーして生成 */
   getOrCreate(hallId: string, date: string): DailySnapshot {
     return this.getByHallDate(hallId, date) ?? this.createFromTemplate(hallId, date);
-  },
-
-  delete(hallId: string, date: string): void {
-    write(
-      'dailySnapshots',
-      read<DailySnapshot[]>('dailySnapshots', [])
-        .filter(s => !(s.hallId === hallId && s.date === date))
-    );
   },
 
   /** スナップショットが存在する日付の Set を返す */
