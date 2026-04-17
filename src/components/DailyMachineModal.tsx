@@ -10,13 +10,18 @@ interface Props {
   onClose: () => void;
 }
 
-const RATINGS: SettingRating[] = [1, 2, 3, 4, 5];
+const RATINGS: SettingRating[] = [1, 2, 3, 4, 5, 6, 7];
+const RATING_LABEL: Record<SettingRating, string> = {
+  1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '特殊',
+};
 const RATING_COLOR: Record<SettingRating, string> = {
   1: 'bg-red-500 text-white',
   2: 'bg-orange-400 text-white',
   3: 'bg-yellow-400 text-gray-800',
   4: 'bg-lime-500 text-white',
   5: 'bg-green-600 text-white',
+  6: 'bg-emerald-700 text-white',
+  7: 'bg-purple-500 text-white',
 };
 const RATING_INACTIVE = 'bg-gray-100 text-gray-500 border border-gray-300';
 
@@ -64,10 +69,10 @@ export default function DailyMachineModal({ machine, daily, date, onSave, onDele
 
         {/* フォーム */}
         <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-4">
-          {/* 設定評価 */}
+          {/* 設定推測 */}
           <div>
-            <label className="text-sm font-medium text-gray-600">設定評価</label>
-            <div className="flex gap-2 mt-1.5">
+            <label className="text-sm font-medium text-gray-600">設定推測</label>
+            <div className="flex gap-1.5 mt-1.5">
               {RATINGS.map(r => (
                 <button
                   key={r}
@@ -76,7 +81,7 @@ export default function DailyMachineModal({ machine, daily, date, onSave, onDele
                   }`}
                   onClick={() => setRating(rating === r ? undefined : r)}
                 >
-                  {r}
+                  {RATING_LABEL[r]}
                 </button>
               ))}
             </div>
@@ -95,9 +100,9 @@ export default function DailyMachineModal({ machine, daily, date, onSave, onDele
             />
           </div>
 
-          {/* 回転率 */}
+          {/* 回転数 */}
           <div>
-            <label className="text-sm font-medium text-gray-600">回転率</label>
+            <label className="text-sm font-medium text-gray-600">回転数</label>
             <input
               type="number"
               inputMode="decimal"

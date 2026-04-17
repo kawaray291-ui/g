@@ -1,7 +1,7 @@
 export type MachineType = 'pachinko' | 'slot';
 export type ParkingType = 'free' | 'paid' | 'none';
 export type ClosingStatus = '休業' | '閉店';
-export type SettingRating = 1 | 2 | 3 | 4 | 5;
+export type SettingRating = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 // レートごとの台数
 export interface HallRates {

@@ -13,6 +13,8 @@ const RATING_DOT: Record<number, string> = {
   3: 'bg-yellow-400',
   4: 'bg-lime-400',
   5: 'bg-green-500',
+  6: 'bg-emerald-600',
+  7: 'bg-purple-500',
 };
 
 export default function DailyMachineCell({ machine, daily, islandColor, onClick }: Props) {
@@ -35,7 +37,7 @@ export default function DailyMachineCell({ machine, daily, islandColor, onClick 
         {dotColor && (
           <span
             className={`absolute top-1 right-1 w-2 h-2 rounded-full ${dotColor}`}
-            title={`設定評価: ${daily?.settingRating}`}
+            title={`設定推測: ${daily?.settingRating === 7 ? '特殊' : daily?.settingRating}`}
           />
         )}
         {/* データ入力済みインジケータ（評価なし） */}
@@ -59,6 +61,20 @@ export default function DailyMachineCell({ machine, daily, islandColor, onClick 
         {daily?.medalDiff !== undefined && (
           <p className={`text-xs font-medium leading-none ${daily.medalDiff >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
             {daily.medalDiff >= 0 ? '+' : ''}{daily.medalDiff.toLocaleString()}
+          </p>
+        )}
+
+        {/* 回転数 */}
+        {daily?.rotationRate !== undefined && (
+          <p className="text-xs text-teal-600 leading-none">
+            {daily.rotationRate}回
+          </p>
+        )}
+
+        {/* メモ */}
+        {daily?.memo && (
+          <p className="text-xs text-gray-400 leading-none truncate italic">
+            {daily.memo}
           </p>
         )}
       </div>
