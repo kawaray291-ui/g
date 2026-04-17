@@ -4,45 +4,32 @@ import { ArrowLeft, Plus, List, Eye, Pencil, History } from 'lucide-react';
 import { hallStore, islandStore, machineStore, noteStore, dailySnapshotStore, registeredFloorMapStore } from '../store';
 import { Island, Machine, MachineNote, MachineType } from '../types';
 import FloorMapCanvas from '../components/FloorMapCanvas';
-import AddMachineModal from '../components/AddMachineModal';
 
 type Tab = 'map' | 'list';
 
-interface IslandFormState {
-  name: string;
+interface AddForm {
   machineType: MachineType;
-  doubleSided: boolean;
-  machineCount: string;
-  startNumber: string;
+  startNum: string;
+  endNum: string;
 }
 
-const defaultForm: IslandFormState = {
-  name: '',
-  machineType: 'pachinko',
-  doubleSided: true,
-  machineCount: '10',
-  startNumber: '101',
-};
+const defaultAddForm: AddForm = { machineType: 'slot', startNum: '', endNum: '' };
 
 export default function FloorMapPage() {
   const { hallId } = useParams<{ hallId: string }>();
   const navigate = useNavigate();
 
   const hall = hallStore.getAll().find(h => h.id === hallId);
-  const [islands, setIslands] = useState<Island[]>(() =>
-    islandStore.getByHall(hallId!)
-  );
+  const [islands, setIslands] = useState<Island[]>(() => islandStore.getByHall(hallId!));
   const [machines, setMachines] = useState<Machine[]>(() =>
-    machineStore.getAll().filter(m => islands.some(i => i.id === m.islandId))
+    machineStore.getAll().filter(m => islandStore.getByHall(hallId!).some(i => i.id === m.islandId))
   );
   const [notes, setNotes] = useState<MachineNote[]>(() => noteStore.getAll());
 
   const [tab, setTab] = useState<Tab>('map');
   const [isEditMode, setIsEditMode] = useState(false);
-  const [addMachineOpen, setAddMachineOpen] = useState(false);
-  const [modal, setModal] = useState<{ mode: 'add' | 'edit'; island?: Island } | null>(null);
-  const [form, setForm] = useState<IslandFormState>(defaultForm);
-  const [deleteTarget, setDeleteTarget] = useState<Island | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addForm, setAddForm] = useState<AddForm>(defaultAddForm);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [registerDate, setRegisterDate] = useState(() => {
@@ -53,10 +40,6 @@ export default function FloorMapPage() {
     registeredFloorMapStore.getByHall(hallId!)
   );
 
-  function refreshSnapshotDates() {
-    setSnapshotDates(registeredFloorMapStore.getByHall(hallId!));
-  }
-
   function refresh() {
     const newIslands = islandStore.getByHall(hallId!);
     setIslands(newIslands);
@@ -64,52 +47,25 @@ export default function FloorMapPage() {
     setNotes(noteStore.getAll());
   }
 
-  function openAdd() {
-    setForm(defaultForm);
-    setModal({ mode: 'add' });
+  function refreshSnapshotDates() {
+    setSnapshotDates(registeredFloorMapStore.getByHall(hallId!));
   }
 
-  function openEdit(island: Island) {
-    setForm({
-      name: island.name,
-      machineType: island.machineType,
-      doubleSided: island.doubleSided,
-      machineCount: String(island.machineCount),
-      startNumber: String(island.startNumber),
-    });
-    setModal({ mode: 'edit', island });
-  }
-
-  function saveIsland() {
-    const count = Math.max(1, Math.min(30, parseInt(form.machineCount) || 10));
-    const start = parseInt(form.startNumber) || 101;
-    if (!form.name.trim()) return;
-
-    if (modal?.mode === 'add') {
-      islandStore.add(
-        hallId!,
-        form.name.trim(),
-        form.machineType,
-        form.doubleSided,
-        count,
-        start
-      );
-    } else if (modal?.mode === 'edit' && modal.island) {
-      islandStore.update(modal.island.id, {
-        name: form.name.trim(),
-        machineType: form.machineType,
-        doubleSided: form.doubleSided,
-        // 台数・番号変更は島の再作成が必要なため今回は変更のみ
-      });
-    }
+  function handleAddRange() {
+    const start = parseInt(addForm.startNum);
+    const end = parseInt(addForm.endNum);
+    if (isNaN(start) || isNaN(end) || end < start) return;
+    islandStore.addRange(hallId!, addForm.machineType, start, end);
     refresh();
-    setModal(null);
+    setAddForm(defaultAddForm);
+    setAddOpen(false);
   }
 
-  const handleIslandMove = useCallback((islandId: string, x: number, y: number) => {
-    islandStore.update(islandId, { x, y });
-    setIslands(islandStore.getByHall(hallId!));
-  }, [hallId]);
+  function handleDeleteMachine(machineId: string) {
+    if (!window.confirm('この台を削除しますか？')) return;
+    machineStore.delete(machineId);
+    refresh();
+  }
 
   const handleMachineMove = useCallback((machineId: string, x: number, y: number) => {
     machineStore.update(machineId, { x, y });
@@ -120,21 +76,6 @@ export default function FloorMapPage() {
     navigate(`/halls/${hallId}/machines/${machineId}`);
   }, [hallId, navigate]);
 
-  function handleAddMachine(islandId: string, number: string, modelName: string, shortMemo: string) {
-    const island = islands.find(i => i.id === islandId);
-    if (!island) return;
-    machineStore.addSingle(islandId, number, modelName, shortMemo, island.x + 10, island.y + 40);
-    refresh();
-    setAddMachineOpen(false);
-  }
-
-  function confirmDelete() {
-    if (!deleteTarget) return;
-    islandStore.delete(deleteTarget.id);
-    refresh();
-    setDeleteTarget(null);
-  }
-
   if (!hall) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -142,6 +83,12 @@ export default function FloorMapPage() {
       </div>
     );
   }
+
+  const addCount = (() => {
+    const s = parseInt(addForm.startNum);
+    const e = parseInt(addForm.endNum);
+    return (!isNaN(s) && !isNaN(e) && e >= s) ? e - s + 1 : null;
+  })();
 
   return (
     <div className="flex flex-col h-full bg-gray-100">
@@ -189,7 +136,7 @@ export default function FloorMapPage() {
               </svg>
             ),
           },
-          { key: 'list' as Tab, label: '島一覧', icon: <List size={14} /> },
+          { key: 'list' as Tab, label: '台一覧', icon: <List size={14} /> },
         ]).map(({ key, label, icon }) => (
           <button
             key={key}
@@ -212,223 +159,140 @@ export default function FloorMapPage() {
           isEditMode={isEditMode}
           onMachineMove={handleMachineMove}
           onMachineTap={handleMachineTap}
-          onIslandMove={handleIslandMove}
-          onIslandEdit={openEdit}
-          onIslandDelete={setDeleteTarget}
         />
       )}
 
       {tab === 'list' && (
         <div className="flex-1 overflow-y-auto pb-20">
-          {islands.length === 0 ? (
+          {machines.length === 0 ? (
             <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
-              島がありません
+              台がありません
             </div>
           ) : (
             <ul className="divide-y divide-gray-200 bg-white mt-3 mx-3 rounded-xl overflow-hidden shadow">
-              {islands.map(island => {
-                const islandMachines = machines.filter(m => m.islandId === island.id);
-                return (
-                  <li key={island.id} className="px-4 py-3">
-                    <div className="flex items-center gap-2 mb-2">
+              {[...machines]
+                .sort((a, b) => parseInt(a.number) - parseInt(b.number) || a.number.localeCompare(b.number))
+                .map(m => {
+                  const island = islands.find(i => i.id === m.islandId);
+                  const isSlot = island?.machineType !== 'pachinko';
+                  return (
+                    <li key={m.id} className="px-4 py-3 flex items-center gap-3">
                       <span
-                        className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
-                        style={{ background: island.machineType === 'pachinko' ? '#1e40af' : '#7c3aed' }}
+                        className="text-xs font-bold px-2 py-0.5 rounded-full text-white shrink-0"
+                        style={{ background: isSlot ? '#7c3aed' : '#1e40af' }}
                       >
-                        {island.machineType === 'pachinko' ? 'パチンコ' : 'スロット'}
-                      </span>
-                      <span className="font-semibold text-gray-900">{island.name}</span>
-                      <span className="text-xs text-gray-400">
-                        {island.doubleSided ? '両面' : '片面'} / {island.machineCount}台
+                        {isSlot ? 'スロ' : 'パチ'}
                       </span>
                       <button
-                        className="ml-auto text-xs text-blue-600"
-                        onClick={() => openEdit(island)}
+                        className="flex-1 text-left text-sm font-semibold text-gray-800"
+                        onClick={() => navigate(`/halls/${hallId}/machines/${m.id}`)}
                       >
-                        編集
+                        {m.number}番台
+                        {m.modelName && <span className="ml-2 text-xs text-gray-500 font-normal">{m.modelName}</span>}
                       </button>
                       <button
-                        className="text-xs text-red-500"
-                        onClick={() => setDeleteTarget(island)}
+                        className="text-xs text-red-400 active:text-red-600 shrink-0"
+                        onClick={() => handleDeleteMachine(m.id)}
                       >
                         削除
                       </button>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {islandMachines
-                        .sort((a, b) => a.side - b.side || a.pos - b.pos)
-                        .map(m => {
-                          const note = notes.find(n => n.machineId === m.id);
-                          return (
-                            <button
-                              key={m.id}
-                              className={`px-2 py-1 rounded border text-xs font-medium ${
-                                note?.settingRating && note.settingRating >= 4
-                                  ? 'bg-green-100 border-green-400 text-green-800'
-                                  : note?.settingRating && note.settingRating <= 2
-                                  ? 'bg-red-50 border-red-300 text-red-700'
-                                  : 'bg-gray-100 border-gray-300 text-gray-700'
-                              }`}
-                              onClick={() => navigate(`/halls/${hallId}/machines/${m.id}`)}
-                            >
-                              {m.number}
-                            </button>
-                          );
-                        })}
-                    </div>
-                  </li>
-                );
-              })}
+                    </li>
+                  );
+                })}
             </ul>
           )}
         </div>
       )}
 
-      {/* 台追加FAB（編集モード・マップタブ時） */}
-      {tab === 'map' && isEditMode && (
-        <button
-          className="fixed bottom-24 right-6 w-12 h-12 rounded-full bg-emerald-600 text-white shadow-lg flex items-center justify-center active:bg-emerald-700 z-10 text-xs font-bold"
-          onClick={() => setAddMachineOpen(true)}
-          aria-label="台を追加"
-        >
-          台+
-        </button>
-      )}
-
-      {/* 島追加FAB */}
+      {/* 台追加FAB */}
       <button
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-blue-700 text-white shadow-lg flex items-center justify-center active:bg-blue-800 z-10"
-        onClick={openAdd}
-        aria-label="島を追加"
+        onClick={() => setAddOpen(true)}
+        aria-label="台を追加"
       >
         <Plus size={28} />
       </button>
 
-      {/* 島追加/編集モーダル */}
-      {modal && (
-        <div className="fixed inset-0 bg-black/50 flex items-end z-50" onClick={() => setModal(null)}>
+      {/* 台追加モーダル */}
+      {addOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-end z-50" onClick={() => setAddOpen(false)}>
           <div
-            className="bg-white w-full rounded-t-2xl p-5 pb-8 flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
+            className="bg-white w-full rounded-t-2xl p-5 pb-8 flex flex-col gap-4"
             onClick={e => e.stopPropagation()}
           >
-            <h2 className="text-lg font-bold text-gray-800">
-              {modal.mode === 'add' ? '島を追加' : '島を編集'}
-            </h2>
+            <h2 className="text-lg font-bold text-gray-800">台を追加</h2>
 
-            <div className="flex flex-col gap-3">
-              <div>
-                <label className="text-sm font-medium text-gray-600">島名 *</label>
+            <div>
+              <label className="text-sm font-medium text-gray-600">機種タイプ</label>
+              <div className="mt-1 flex gap-2">
+                {(['slot', 'pachinko'] as MachineType[]).map(t => (
+                  <button
+                    key={t}
+                    className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      addForm.machineType === t
+                        ? t === 'pachinko'
+                          ? 'bg-blue-700 text-white border-blue-700'
+                          : 'bg-purple-600 text-white border-purple-600'
+                        : 'border-gray-300 text-gray-600'
+                    }`}
+                    onClick={() => setAddForm(f => ({ ...f, machineType: t }))}
+                  >
+                    {t === 'pachinko' ? 'パチンコ' : 'スロット'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-3 items-end">
+              <div className="flex-1">
+                <label className="text-sm font-medium text-gray-600">開始番台</label>
                 <input
+                  type="number"
+                  inputMode="numeric"
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-base outline-none focus:border-blue-500"
-                  placeholder="例：北1島"
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="例：101"
+                  value={addForm.startNum}
+                  onChange={e => setAddForm(f => ({ ...f, startNum: e.target.value }))}
                   autoFocus
                 />
               </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-600">機種タイプ</label>
-                <div className="mt-1 flex gap-2">
-                  {(['pachinko', 'slot'] as MachineType[]).map(t => (
-                    <button
-                      key={t}
-                      className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                        form.machineType === t
-                          ? t === 'pachinko'
-                            ? 'bg-blue-700 text-white border-blue-700'
-                            : 'bg-purple-600 text-white border-purple-600'
-                          : 'border-gray-300 text-gray-600'
-                      }`}
-                      onClick={() => setForm(f => ({ ...f, machineType: t }))}
-                    >
-                      {t === 'pachinko' ? 'パチンコ' : 'スロット'}
-                    </button>
-                  ))}
-                </div>
+              <span className="text-gray-400 pb-2.5">〜</span>
+              <div className="flex-1">
+                <label className="text-sm font-medium text-gray-600">終了番台</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-base outline-none focus:border-blue-500"
+                  placeholder="例：120"
+                  value={addForm.endNum}
+                  onChange={e => setAddForm(f => ({ ...f, endNum: e.target.value }))}
+                />
               </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-600">島の形</label>
-                <div className="mt-1 flex gap-2">
-                  {[true, false].map(v => (
-                    <button
-                      key={String(v)}
-                      className={`flex-1 py-2 rounded-lg border text-sm font-medium ${
-                        form.doubleSided === v
-                          ? 'bg-blue-100 border-blue-500 text-blue-800'
-                          : 'border-gray-300 text-gray-600'
-                      }`}
-                      onClick={() => setForm(f => ({ ...f, doubleSided: v }))}
-                      disabled={modal.mode === 'edit'}
-                    >
-                      {v ? '両面島' : '片面島'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {modal.mode === 'add' && (
-                <>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">片面台数</label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-base outline-none focus:border-blue-500"
-                      placeholder="10"
-                      value={form.machineCount}
-                      min={1}
-                      max={30}
-                      onChange={e => setForm(f => ({ ...f, machineCount: e.target.value }))}
-                    />
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {form.doubleSided
-                        ? `両面: ${form.machineCount}台 × 2 = ${Number(form.machineCount) * 2}台`
-                        : `${form.machineCount}台`}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">台番号 開始番号</label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-base outline-none focus:border-blue-500"
-                      placeholder="101"
-                      value={form.startNumber}
-                      onChange={e => setForm(f => ({ ...f, startNumber: e.target.value }))}
-                    />
-                  </div>
-                </>
-              )}
             </div>
+
+            {addCount !== null && (
+              <p className="text-sm text-blue-600 font-medium -mt-2">
+                {addForm.startNum}番台〜{addForm.endNum}番台（{addCount}台）を追加します
+              </p>
+            )}
 
             <div className="flex gap-3">
               <button
                 className="flex-1 py-3 rounded-xl border border-gray-300 text-gray-600 font-medium"
-                onClick={() => setModal(null)}
+                onClick={() => { setAddForm(defaultAddForm); setAddOpen(false); }}
               >
                 キャンセル
               </button>
               <button
                 className="flex-1 py-3 rounded-xl bg-blue-700 text-white font-medium disabled:opacity-40"
-                onClick={saveIsland}
-                disabled={!form.name.trim()}
+                onClick={handleAddRange}
+                disabled={addCount === null}
               >
-                {modal.mode === 'add' ? '追加' : '保存'}
+                追加
               </button>
             </div>
           </div>
         </div>
-      )}
-
-      {/* 台追加モーダル */}
-      {addMachineOpen && islands.length > 0 && (
-        <AddMachineModal
-          islands={islands}
-          onAdd={handleAddMachine}
-          onClose={() => setAddMachineOpen(false)}
-        />
       )}
 
       {/* 島図を保存モーダル */}
@@ -513,32 +377,6 @@ export default function FloorMapPage() {
                 );
               })}
             </ul>
-          </div>
-        </div>
-      )}
-
-      {/* 削除確認 */}
-      {deleteTarget && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
-          <div className="bg-white w-full max-w-sm rounded-2xl p-5 flex flex-col gap-4">
-            <h2 className="text-lg font-bold text-gray-800">島を削除</h2>
-            <p className="text-sm text-gray-600">
-              「{deleteTarget.name}」とその全台データを削除します。この操作は取り消せません。
-            </p>
-            <div className="flex gap-3">
-              <button
-                className="flex-1 py-3 rounded-xl border border-gray-300 text-gray-600 font-medium"
-                onClick={() => setDeleteTarget(null)}
-              >
-                キャンセル
-              </button>
-              <button
-                className="flex-1 py-3 rounded-xl bg-red-600 text-white font-medium"
-                onClick={confirmDelete}
-              >
-                削除
-              </button>
-            </div>
           </div>
         </div>
       )}

@@ -100,6 +100,18 @@ export const islandStore = {
     const machines = machineStore.getByIsland(id);
     machines.forEach(m => machineStore.delete(m.id));
   },
+
+  /** 番号レンジで台を一括追加（島は内部コンテナとして透過的に作成） */
+  addRange(hallId: string, machineType: MachineType, startNum: number, endNum: number): Island {
+    const count = Math.max(1, endNum - startNum + 1);
+    const existing = machineStore.getAll().filter(m =>
+      this.getByHall(hallId).some(i => i.id === m.islandId)
+    );
+    const defaultY = existing.length > 0
+      ? Math.max(...existing.map(m => (m.y ?? 50) + 80)) + 20
+      : 50;
+    return this.add(hallId, `${startNum}-${endNum}`, machineType, false, count, startNum, 50, defaultY);
+  },
 };
 
 // ─── 台 ──────────────────────────────────────────────────────
