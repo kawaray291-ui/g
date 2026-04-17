@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Map } from 'lucide-react';
 import { CalendarEntry } from '../types';
 
@@ -10,7 +10,7 @@ interface SaveData {
 }
 
 interface Props {
-  date: string;           // YYYY-MM-DD
+  date: string;
   entry?: CalendarEntry;
   onSave: (data: SaveData) => void;
   onDelete: () => void;
@@ -26,34 +26,58 @@ function formatDate(dateStr: string): string {
 export default function CalendarEntryModal({
   date, entry, onSave, onDelete, onOpenDailyMap, onClose,
 }: Props) {
-  const [memo, setMemo]               = useState(entry?.memo ?? '');
-  const [medalSign, setMedalSign]     = useState<'+' | '-'>(
+  const [memo, setMemo]           = useState(entry?.memo ?? '');
+  const [medalSign, setMedalSign] = useState<'+' | '-'>(
     entry?.medalDiff !== undefined && entry.medalDiff < 0 ? '-' : '+'
   );
-  const [medalAbs, setMedalAbs]       = useState(
+  const [medalAbs, setMedalAbs]   = useState(
     entry?.medalDiff !== undefined ? Math.abs(entry.medalDiff).toString() : ''
   );
   const [avgRotation, setAvgRotation] = useState(entry?.avgRotation?.toString() ?? '');
   const [queueCount, setQueueCount]   = useState(entry?.queueCount?.toString() ?? '');
+  const [hasSaved, setHasSaved]       = useState(entry !== undefined);
 
-  function handleSave() {
+  const isFirstRender = useRef(true);
+  const timerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const buildData = useCallback((): SaveData => {
     const medalDiffVal = medalAbs !== ''
       ? (medalSign === '-' ? -1 : 1) * Number(medalAbs)
       : undefined;
-    onSave({
+    return {
       memo,
       medalDiff:   medalDiffVal,
       avgRotation: avgRotation !== '' ? Number(avgRotation) : undefined,
       queueCount:  queueCount  !== '' ? Number(queueCount)  : undefined,
-    });
+    };
+  }, [memo, medalSign, medalAbs, avgRotation, queueCount]);
+
+  // フィールド変更時にデバウンス自動保存
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      onSave(buildData());
+      setHasSaved(true);
+    }, 800);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [memo, medalSign, medalAbs, avgRotation, queueCount]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleClose() {
+    // 未フラッシュのタイマーがあれば即時保存
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+      onSave(buildData());
+    }
+    onClose();
   }
 
-  const hasData = entry !== undefined;
   const inputCls =
     'w-full border border-gray-300 rounded-lg px-3 py-2 text-base outline-none focus:border-blue-500';
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex items-end z-50" onClick={handleClose}>
       <div
         className="bg-white w-full rounded-t-2xl flex flex-col max-h-[85vh]"
         onClick={e => e.stopPropagation()}
@@ -61,14 +85,14 @@ export default function CalendarEntryModal({
         {/* ヘッダー */}
         <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-gray-100">
           <h2 className="text-base font-bold text-gray-800">{formatDate(date)}</h2>
-          <button className="text-gray-400 active:text-gray-600 p-1 text-lg" onClick={onClose}>
+          <button className="text-gray-400 active:text-gray-600 p-1 text-lg" onClick={handleClose}>
             ✕
           </button>
         </div>
 
         {/* フォーム */}
         <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-4">
-          {/* 島図ボタン（大） */}
+          {/* 島図ボタン */}
           <button
             className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-bold rounded-xl active:bg-indigo-700"
             style={{ fontSize: 18, paddingTop: 16, paddingBottom: 16, paddingLeft: 32, paddingRight: 32 }}
@@ -77,6 +101,7 @@ export default function CalendarEntryModal({
             <Map size={22} />
             島図
           </button>
+
           <div>
             <label className="text-sm font-medium text-gray-600">予定・メモ</label>
             <textarea
@@ -145,29 +170,17 @@ export default function CalendarEntryModal({
           </div>
         </div>
 
-        {/* ボタン */}
-        <div className="px-5 py-4 border-t border-gray-100 flex gap-2">
-          {hasData && (
+        {/* 削除ボタン（データがある場合のみ） */}
+        {(entry !== undefined || hasSaved) && (
+          <div className="px-5 py-3 border-t border-gray-100">
             <button
-              className="px-4 py-3 rounded-xl border border-red-300 text-red-500 font-medium text-sm active:bg-red-50"
+              className="px-4 py-2 rounded-xl border border-red-300 text-red-500 font-medium text-sm active:bg-red-50"
               onClick={onDelete}
             >
               削除
             </button>
-          )}
-          <button
-            className="flex-1 py-3 rounded-xl border border-gray-300 text-gray-600 font-medium"
-            onClick={onClose}
-          >
-            キャンセル
-          </button>
-          <button
-            className="flex-1 py-3 rounded-xl bg-blue-700 text-white font-medium active:bg-blue-800"
-            onClick={handleSave}
-          >
-            保存
-          </button>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
