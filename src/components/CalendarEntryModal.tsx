@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Map } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Map, Plus, X } from 'lucide-react';
 import { CalendarEntry } from '../types';
 import { mediaSourceStore, eventTemplateStore } from '../store';
 
@@ -20,6 +20,8 @@ interface Props {
   onClose: () => void;
 }
 
+type Row = { mediaId: string; eventIds: string[] };
+
 function formatDate(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);
   return `${y}年${m}月${d}日`;
@@ -39,25 +41,31 @@ export default function CalendarEntryModal({
   const [queueCount, setQueueCount]   = useState(entry?.queueCount?.toString() ?? '');
   const [hasSaved, setHasSaved]       = useState(entry !== undefined);
 
-  // 複数媒体・複数イベント選択
-  const allMediaSources = mediaSourceStore.getAll();
+  const allMediaSources  = mediaSourceStore.getAll();
   const allEventTemplates = eventTemplateStore.getAll();
 
-  // 選択済みイベントIDのSet
-  const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(
-    () => new Set(entry?.eventTemplateIds ?? [])
-  );
-
-  // 選択済みイベントが属する媒体IDのSet（展開済み媒体）
-  const [openMediaIds, setOpenMediaIds] = useState<Set<string>>(() => {
+  // 媒体+イベントの行リスト
+  const [rows, setRows] = useState<Row[]>(() => {
     const ids = entry?.eventTemplateIds ?? [];
-    const mediaIds = new Set<string>();
+    if (ids.length === 0) return [{ mediaId: '', eventIds: [] }];
+    // 保存済みのIDを媒体ごとにグループ化して復元
+    const grouped = new Map<string, string[]>();
     ids.forEach(eid => {
       const ev = allEventTemplates.find(e => e.id === eid);
-      if (ev) mediaIds.add(ev.mediaSourceId);
+      if (ev) {
+        const arr = grouped.get(ev.mediaSourceId) ?? [];
+        arr.push(eid);
+        grouped.set(ev.mediaSourceId, arr);
+      }
     });
-    return mediaIds;
+    const restored = Array.from(grouped.entries()).map(([mediaId, eventIds]) => ({ mediaId, eventIds }));
+    return restored.length > 0 ? restored : [{ mediaId: '', eventIds: [] }];
   });
+
+  const allSelectedIds = useMemo(
+    () => rows.flatMap(r => r.eventIds),
+    [rows],
+  );
 
   const isFirstRender = useRef(true);
   const timerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -66,15 +74,14 @@ export default function CalendarEntryModal({
     const medalDiffVal = medalAbs !== ''
       ? (medalSign === '-' ? -1 : 1) * Number(medalAbs)
       : undefined;
-    const ids = Array.from(selectedEventIds);
     return {
       memo,
       medalDiff:        medalDiffVal,
       avgRotation:      avgRotation !== '' ? Number(avgRotation) : undefined,
       queueCount:       queueCount  !== '' ? Number(queueCount)  : undefined,
-      eventTemplateIds: ids.length > 0 ? ids : undefined,
+      eventTemplateIds: allSelectedIds.length > 0 ? allSelectedIds : undefined,
     };
-  }, [memo, medalSign, medalAbs, avgRotation, queueCount, selectedEventIds]);
+  }, [memo, medalSign, medalAbs, avgRotation, queueCount, allSelectedIds]);
 
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
@@ -84,7 +91,7 @@ export default function CalendarEntryModal({
       setHasSaved(true);
     }, 800);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [memo, medalSign, medalAbs, avgRotation, queueCount, selectedEventIds]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [memo, medalSign, medalAbs, avgRotation, queueCount, allSelectedIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleClose() {
     if (timerRef.current) {
@@ -95,38 +102,35 @@ export default function CalendarEntryModal({
     onClose();
   }
 
-  function toggleMedia(mediaId: string) {
-    setOpenMediaIds(prev => {
-      const next = new Set(prev);
-      if (next.has(mediaId)) {
-        next.delete(mediaId);
-        // その媒体のイベント選択も解除
-        const mediaEventIds = allEventTemplates
-          .filter(e => e.mediaSourceId === mediaId)
-          .map(e => e.id);
-        setSelectedEventIds(prevSel => {
-          const s = new Set(prevSel);
-          mediaEventIds.forEach(id => s.delete(id));
-          return s;
-        });
-      } else {
-        next.add(mediaId);
-      }
-      return next;
-    });
+  function setRowMedia(idx: number, mediaId: string) {
+    setRows(prev => prev.map((r, i) => i === idx ? { mediaId, eventIds: [] } : r));
   }
 
-  function toggleEvent(eventId: string) {
-    setSelectedEventIds(prev => {
-      const next = new Set(prev);
-      if (next.has(eventId)) next.delete(eventId);
-      else next.add(eventId);
-      return next;
-    });
+  function addEventToRow(idx: number, eventId: string) {
+    if (!eventId) return;
+    setRows(prev => prev.map((r, i) =>
+      i === idx && !r.eventIds.includes(eventId)
+        ? { ...r, eventIds: [...r.eventIds, eventId] }
+        : r
+    ));
   }
 
-  const inputCls =
-    'w-full border border-gray-300 rounded-lg px-3 py-2 text-base outline-none focus:border-blue-500';
+  function removeEventFromRow(idx: number, eventId: string) {
+    setRows(prev => prev.map((r, i) =>
+      i === idx ? { ...r, eventIds: r.eventIds.filter(id => id !== eventId) } : r
+    ));
+  }
+
+  function addRow() {
+    setRows(prev => [...prev, { mediaId: '', eventIds: [] }]);
+  }
+
+  function removeRow(idx: number) {
+    setRows(prev => prev.length === 1 ? [{ mediaId: '', eventIds: [] }] : prev.filter((_, i) => i !== idx));
+  }
+
+  const selectCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-base outline-none bg-white focus:border-blue-500';
+  const inputCls  = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-base outline-none focus:border-blue-500';
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end z-50" onClick={handleClose}>
@@ -154,56 +158,75 @@ export default function CalendarEntryModal({
             島図
           </button>
 
-          {/* イベント選択（媒体複数・イベント複数） */}
+          {/* イベント選択 */}
           {allMediaSources.length > 0 && (
             <div>
               <label className="text-sm font-medium text-gray-600">イベント</label>
-              <div className="mt-2 flex flex-col gap-2">
-                {allMediaSources.map(media => {
-                  const isOpen  = openMediaIds.has(media.id);
-                  const events  = allEventTemplates.filter(e => e.mediaSourceId === media.id);
-                  const selCount = events.filter(e => selectedEventIds.has(e.id)).length;
+              <div className="mt-2 flex flex-col gap-3">
+                {rows.map((row, idx) => {
+                  const mediaEvents = allEventTemplates.filter(e => e.mediaSourceId === row.mediaId);
+                  const unselected  = mediaEvents.filter(e => !row.eventIds.includes(e.id));
                   return (
-                    <div key={media.id} className="border border-gray-200 rounded-xl overflow-hidden">
-                      {/* 媒体トグル */}
-                      <button
-                        type="button"
-                        className={`w-full flex items-center justify-between px-3 py-2.5 text-sm font-semibold active:bg-gray-50 ${
-                          isOpen ? 'bg-blue-50 text-blue-700' : 'bg-white text-gray-700'
-                        }`}
-                        onClick={() => toggleMedia(media.id)}
-                      >
-                        <span>{media.name}</span>
-                        <span className="flex items-center gap-1.5">
-                          {selCount > 0 && (
-                            <span className="text-xs bg-blue-600 text-white rounded-full px-1.5 py-0.5 font-bold">
-                              {selCount}
-                            </span>
-                          )}
-                          <span className="text-gray-400 text-xs">{isOpen ? '▲' : '▼'}</span>
-                        </span>
-                      </button>
+                    <div key={idx} className="flex flex-col gap-1.5">
+                      <div className="flex gap-2 items-center">
+                        {/* 媒体ドロップダウン */}
+                        <select
+                          className={`flex-1 ${selectCls}`}
+                          value={row.mediaId}
+                          onChange={e => setRowMedia(idx, e.target.value)}
+                        >
+                          <option value="">媒体を選択</option>
+                          {allMediaSources.map(m => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                          ))}
+                        </select>
+                        {/* 行削除ボタン（複数行のとき表示） */}
+                        {rows.length > 1 && (
+                          <button
+                            type="button"
+                            className="p-1.5 text-gray-400 active:text-red-500 shrink-0"
+                            onClick={() => removeRow(idx)}
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
 
-                      {/* イベント一覧 */}
-                      {isOpen && (
-                        <div className="px-3 pb-3 pt-1 bg-white flex flex-wrap gap-2 border-t border-gray-100">
-                          {events.length === 0 ? (
-                            <p className="text-xs text-gray-400 py-1">イベントがありません</p>
-                          ) : events.map(ev => {
-                            const active = selectedEventIds.has(ev.id);
+                      {/* イベントドロップダウン（媒体選択後に表示） */}
+                      {row.mediaId && (
+                        <select
+                          className={selectCls}
+                          value=""
+                          onChange={e => addEventToRow(idx, e.target.value)}
+                        >
+                          <option value="">
+                            {unselected.length === 0 ? 'イベントがありません' : 'イベントを選択'}
+                          </option>
+                          {unselected.map(ev => (
+                            <option key={ev.id} value={ev.id}>{ev.name}</option>
+                          ))}
+                        </select>
+                      )}
+
+                      {/* 選択済みイベントチップ */}
+                      {row.eventIds.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {row.eventIds.map(eid => {
+                            const ev = allEventTemplates.find(e => e.id === eid);
                             return (
-                              <button
-                                key={ev.id}
-                                type="button"
-                                className={`px-3 py-1.5 rounded-full text-sm border font-medium ${
-                                  active
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'bg-white text-gray-600 border-gray-300 active:bg-gray-50'
-                                }`}
-                                onClick={() => toggleEvent(ev.id)}
+                              <span
+                                key={eid}
+                                className="flex items-center gap-1 bg-blue-600 text-white text-xs font-medium rounded-full px-2.5 py-1"
                               >
-                                {ev.name}
-                              </button>
+                                {ev?.name ?? eid}
+                                <button
+                                  type="button"
+                                  className="opacity-80 active:opacity-100"
+                                  onClick={() => removeEventFromRow(idx, eid)}
+                                >
+                                  <X size={11} />
+                                </button>
+                              </span>
                             );
                           })}
                         </div>
@@ -211,6 +234,16 @@ export default function CalendarEntryModal({
                     </div>
                   );
                 })}
+
+                {/* 媒体を追加ボタン */}
+                <button
+                  type="button"
+                  className="flex items-center gap-1 text-blue-600 text-sm font-medium active:text-blue-800 self-start"
+                  onClick={addRow}
+                >
+                  <Plus size={15} />
+                  媒体を追加
+                </button>
               </div>
             </div>
           )}
