@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, List, Eye, Pencil } from 'lucide-react';
-import { hallStore, islandStore, machineStore, noteStore } from '../store';
+import { ArrowLeft, Plus, List, Eye, Pencil, History } from 'lucide-react';
+import { hallStore, islandStore, machineStore, noteStore, dailySnapshotStore } from '../store';
 import { Island, Machine, MachineNote, MachineType } from '../types';
 import FloorMapCanvas from '../components/FloorMapCanvas';
 import AddMachineModal from '../components/AddMachineModal';
@@ -43,6 +43,11 @@ export default function FloorMapPage() {
   const [modal, setModal] = useState<{ mode: 'add' | 'edit'; island?: Island } | null>(null);
   const [form, setForm] = useState<IslandFormState>(defaultForm);
   const [deleteTarget, setDeleteTarget] = useState<Island | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const snapshotDates = dailySnapshotStore
+    .getDatesWithSnapshot(hallId!)
+    ? Array.from(dailySnapshotStore.getDatesWithSnapshot(hallId!)).sort((a, b) => b.localeCompare(a))
+    : [];
 
   function refresh() {
     const newIslands = islandStore.getByHall(hallId!);
@@ -138,6 +143,14 @@ export default function FloorMapPage() {
           <ArrowLeft size={22} />
         </button>
         <h1 className="text-base font-bold flex-1 truncate">{hall.name}</h1>
+        {snapshotDates.length > 0 && (
+          <button
+            className="flex items-center gap-1 text-xs text-blue-200 bg-blue-700 px-2.5 py-1.5 rounded-full active:bg-blue-600 shrink-0"
+            onClick={() => setHistoryOpen(true)}
+          >
+            <History size={13} />過去の島図
+          </button>
+        )}
         {tab === 'map' && (
           <button
             className={`p-1.5 rounded-full active:opacity-70 ${isEditMode ? 'bg-yellow-400/30' : ''}`}
@@ -402,6 +415,43 @@ export default function FloorMapPage() {
           onAdd={handleAddMachine}
           onClose={() => setAddMachineOpen(false)}
         />
+      )}
+
+      {/* 過去の島図モーダル */}
+      {historyOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-end z-50" onClick={() => setHistoryOpen(false)}>
+          <div
+            className="bg-white w-full rounded-t-2xl flex flex-col max-h-[70vh]"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-gray-100">
+              <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                <History size={16} className="text-blue-600" />過去の島図
+              </h2>
+              <button className="text-gray-400 active:text-gray-600 p-1 text-lg" onClick={() => setHistoryOpen(false)}>
+                ✕
+              </button>
+            </div>
+            <ul className="overflow-y-auto divide-y divide-gray-100">
+              {snapshotDates.map(d => {
+                const [y, m, day] = d.split('-').map(Number);
+                return (
+                  <li key={d}>
+                    <button
+                      className="w-full flex items-center gap-3 px-5 py-3.5 active:bg-gray-50 text-left"
+                      onClick={() => {
+                        setHistoryOpen(false);
+                        navigate(`/halls/${hallId}/map/daily/${d}`);
+                      }}
+                    >
+                      <span className="text-sm text-gray-800 font-medium">{y}年{m}月{day}日</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
       )}
 
       {/* 削除確認 */}
