@@ -5,7 +5,7 @@ export const SETTING_COLORS: Record<number, { bg: string; fg: string; label: str
   3: { bg: '#f97316', fg: '#ffffff', label: '3' },
   4: { bg: '#ef4444', fg: '#ffffff', label: '4' },
   5: { bg: '#a855f7', fg: '#ffffff', label: '5' },
-  6: { bg: '#fcd34d', fg: '#92400e', label: '6' },
+  6: { bg: '#fef9c3', fg: '#713f12', label: '6' },
   7: { bg: '#ec4899', fg: '#ffffff', label: '特殊' },
 };
 
