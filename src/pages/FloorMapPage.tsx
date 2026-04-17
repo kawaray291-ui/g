@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, List, Eye, Pencil, History } from 'lucide-react';
-import { hallStore, islandStore, machineStore, noteStore, dailySnapshotStore } from '../store';
+import { hallStore, islandStore, machineStore, noteStore, dailySnapshotStore, registeredFloorMapStore } from '../store';
 import { Island, Machine, MachineNote, MachineType } from '../types';
 import FloorMapCanvas from '../components/FloorMapCanvas';
 import AddMachineModal from '../components/AddMachineModal';
@@ -50,11 +50,11 @@ export default function FloorMapPage() {
     return [t.getFullYear(), String(t.getMonth() + 1).padStart(2, '0'), String(t.getDate()).padStart(2, '0')].join('-');
   });
   const [snapshotDates, setSnapshotDates] = useState<string[]>(() =>
-    Array.from(dailySnapshotStore.getDatesWithSnapshot(hallId!)).sort((a, b) => b.localeCompare(a))
+    registeredFloorMapStore.getByHall(hallId!)
   );
 
   function refreshSnapshotDates() {
-    setSnapshotDates(Array.from(dailySnapshotStore.getDatesWithSnapshot(hallId!)).sort((a, b) => b.localeCompare(a)));
+    setSnapshotDates(registeredFloorMapStore.getByHall(hallId!));
   }
 
   function refresh() {
@@ -464,7 +464,10 @@ export default function FloorMapPage() {
                 className="flex-1 py-3 rounded-xl bg-blue-700 text-white font-medium disabled:opacity-40"
                 disabled={!registerDate}
                 onClick={() => {
-                  dailySnapshotStore.createFromTemplate(hallId!, registerDate);
+                  if (!dailySnapshotStore.getByHallDate(hallId!, registerDate)) {
+                    dailySnapshotStore.createFromTemplate(hallId!, registerDate);
+                  }
+                  registeredFloorMapStore.add(hallId!, registerDate);
                   refreshSnapshotDates();
                   setRegisterOpen(false);
                   navigate(`/halls/${hallId}/map/daily/${registerDate}`);

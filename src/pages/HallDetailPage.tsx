@@ -1,7 +1,7 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Map, History } from 'lucide-react';
-import { hallStore, calendarStore, dailySnapshotStore } from '../store';
+import { hallStore, calendarStore, dailySnapshotStore, registeredFloorMapStore } from '../store';
 import { Hall, CalendarEntry, ParkingType, ClosingStatus } from '../types';
 import {
   TextRow, NumberRow, ToggleRow, SelectRow,
@@ -37,13 +37,10 @@ export default function HallDetailPage() {
   const [snapshotDates, setSnapshotDates] = useState<Set<string>>(
     () => dailySnapshotStore.getDatesWithSnapshot(hallId!)
   );
-  const [calendarDate, setCalendarDate] = useState<string | null>(null);
-
-  // スナップショット日付を降順リストに変換
-  const snapshotDateList = useMemo(
-    () => Array.from(snapshotDates).sort((a, b) => b.localeCompare(a)),
-    [snapshotDates]
+  const [registeredDates, setRegisteredDates] = useState<string[]>(
+    () => registeredFloorMapStore.getByHall(hallId!)
   );
+  const [calendarDate, setCalendarDate] = useState<string | null>(null);
   const [memo, setMemo] = useState(() => hall?.notes ?? '');
   const memoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -74,6 +71,7 @@ export default function HallDetailPage() {
 
   function refreshSnapshotDates() {
     setSnapshotDates(dailySnapshotStore.getDatesWithSnapshot(hallId!));
+    setRegisteredDates(registeredFloorMapStore.getByHall(hallId!));
   }
 
   const prefectureOptions = PREFECTURES.map(p => ({ value: p, label: p }));
@@ -208,15 +206,15 @@ export default function HallDetailPage() {
               <span className="text-sm font-semibold text-gray-800">デフォルト島図</span>
             </button>
 
-            {/* スナップショット履歴 */}
-            {snapshotDateList.length > 0 && (
+            {/* 手動登録の過去の島図 */}
+            {registeredDates.length > 0 && (
               <>
                 <div className="px-4 py-2 bg-gray-50">
                   <span className="text-xs font-medium text-gray-500 flex items-center gap-1">
-                    <History size={12} />過去の島図（{snapshotDateList.length}件）
+                    <History size={12} />過去の島図（{registeredDates.length}件）
                   </span>
                 </div>
-                {snapshotDateList.map(d => {
+                {registeredDates.map(d => {
                   const [y, m, day] = d.split('-').map(Number);
                   return (
                     <button

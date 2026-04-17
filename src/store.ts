@@ -406,3 +406,24 @@ export const eventTemplateStore = {
     write('eventTemplates', this.getAll().filter(e => e.id !== id));
   },
 };
+
+// ─── 手動登録した過去の島図（日付リスト） ─────────────────────────
+export const registeredFloorMapStore = {
+  getByHall(hallId: string): string[] {
+    const all = read<Record<string, string[]>>('registeredFloorMaps', {});
+    return (all[hallId] ?? []).sort((a, b) => b.localeCompare(a));
+  },
+
+  add(hallId: string, date: string): void {
+    const all = read<Record<string, string[]>>('registeredFloorMaps', {});
+    const dates = new Set(all[hallId] ?? []);
+    dates.add(date);
+    write('registeredFloorMaps', { ...all, [hallId]: Array.from(dates) });
+  },
+
+  delete(hallId: string, date: string): void {
+    const all = read<Record<string, string[]>>('registeredFloorMaps', {});
+    const dates = (all[hallId] ?? []).filter(d => d !== date);
+    write('registeredFloorMaps', { ...all, [hallId]: dates });
+  },
+};

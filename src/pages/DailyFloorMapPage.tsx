@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronLeft, ChevronRight, Map } from 'lucide-react';
-import { hallStore, dailyMachineStore, dailySnapshotStore } from '../store';
+import { hallStore, dailyMachineStore, dailySnapshotStore, registeredFloorMapStore } from '../store';
 import { SETTING_COLORS } from '../constants';
 import { Machine, DailyMachineData, DailySnapshot } from '../types';
 import DailyFloorMapCanvas from '../components/DailyFloorMapCanvas';
@@ -66,6 +66,7 @@ export default function DailyFloorMapPage() {
     if (!window.confirm(`${formatDate(date!)}のデイリー島図をすべて削除しますか？\n島図・入力情報が両方削除されます。`)) return;
     dailyMachineStore.deleteByHallDate(hallId!, date!);
     dailySnapshotStore.delete(hallId!, date!);
+    registeredFloorMapStore.delete(hallId!, date!);
     navigate(-1);
   }
 
