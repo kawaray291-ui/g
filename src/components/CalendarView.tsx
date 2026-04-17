@@ -148,12 +148,13 @@ export default function CalendarView({ entries, snapshotDates, onDayClick }: Pro
                 active:brightness-95
                 ${bg}
                 ${isToday ? 'ring-2 ring-inset ring-blue-400' : ''}
+                ${hasSnapshot ? 'border-l-2 border-l-indigo-400' : ''}
               `}
               onClick={() => onDayClick(dateStr)}
             >
-              {/* 日番号行（スナップショットドット付き） */}
-              <span className="flex items-center justify-between w-full">
-                <span className={`text-xs font-semibold leading-none ${
+              {/* 日番号行（島図バッジ付き） */}
+              <span className="flex items-center justify-between w-full gap-0.5">
+                <span className={`text-xs font-semibold leading-none shrink-0 ${
                 !isCurrent
                   ? 'text-gray-300'
                   : isToday
@@ -167,7 +168,9 @@ export default function CalendarView({ entries, snapshotDates, onDayClick }: Pro
                   {d.getDate()}
                 </span>
                 {hasSnapshot && (
-                  <span className="w-3 h-3 rounded-full bg-indigo-400 shrink-0" />
+                  <span className="text-[9px] bg-indigo-500 text-white rounded px-1 py-0.5 font-bold leading-none shrink-0">
+                    島図
+                  </span>
                 )}
               </span>
 
