@@ -27,14 +27,22 @@ export default function CalendarEntryModal({
   date, entry, onSave, onDelete, onOpenDailyMap, onClose,
 }: Props) {
   const [memo, setMemo]               = useState(entry?.memo ?? '');
-  const [medalDiff, setMedalDiff]     = useState(entry?.medalDiff?.toString() ?? '');
+  const [medalSign, setMedalSign]     = useState<'+' | '-'>(
+    entry?.medalDiff !== undefined && entry.medalDiff < 0 ? '-' : '+'
+  );
+  const [medalAbs, setMedalAbs]       = useState(
+    entry?.medalDiff !== undefined ? Math.abs(entry.medalDiff).toString() : ''
+  );
   const [avgRotation, setAvgRotation] = useState(entry?.avgRotation?.toString() ?? '');
   const [queueCount, setQueueCount]   = useState(entry?.queueCount?.toString() ?? '');
 
   function handleSave() {
+    const medalDiffVal = medalAbs !== ''
+      ? (medalSign === '-' ? -1 : 1) * Number(medalAbs)
+      : undefined;
     onSave({
       memo,
-      medalDiff:   medalDiff   !== '' ? Number(medalDiff)   : undefined,
+      medalDiff:   medalDiffVal,
       avgRotation: avgRotation !== '' ? Number(avgRotation) : undefined,
       queueCount:  queueCount  !== '' ? Number(queueCount)  : undefined,
     });
@@ -82,15 +90,33 @@ export default function CalendarEntryModal({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-600">差枚数（±枚）</label>
-            <input
-              type="number"
-              inputMode="numeric"
-              className={`mt-1 ${inputCls}`}
-              placeholder="例：+3000 や -1500"
-              value={medalDiff}
-              onChange={e => setMedalDiff(e.target.value)}
-            />
+            <label className="text-sm font-medium text-gray-600">差枚数</label>
+            <div className="mt-1 flex items-center gap-2">
+              <div className="flex rounded-lg border border-gray-300 overflow-hidden shrink-0">
+                <button
+                  type="button"
+                  className={`px-4 py-2 text-sm font-bold ${medalSign === '+' ? 'bg-green-500 text-white' : 'text-gray-500 active:bg-gray-100'}`}
+                  onClick={() => setMedalSign('+')}
+                >
+                  ＋
+                </button>
+                <button
+                  type="button"
+                  className={`px-4 py-2 text-sm font-bold border-l border-gray-300 ${medalSign === '-' ? 'bg-red-500 text-white' : 'text-gray-500 active:bg-gray-100'}`}
+                  onClick={() => setMedalSign('-')}
+                >
+                  −
+                </button>
+              </div>
+              <input
+                type="number"
+                inputMode="numeric"
+                className={`flex-1 ${inputCls}`}
+                placeholder="例：3000"
+                value={medalAbs}
+                onChange={e => setMedalAbs(e.target.value)}
+              />
+            </div>
           </div>
 
           <div>
@@ -108,30 +134,14 @@ export default function CalendarEntryModal({
 
           <div>
             <label className="text-sm font-medium text-gray-600">並び人数</label>
-            <div className="mt-1 flex items-center gap-2">
-              <button
-                type="button"
-                className="w-11 h-11 rounded-lg border border-gray-300 text-xl font-bold text-gray-600 active:bg-gray-100 shrink-0 flex items-center justify-center"
-                onClick={() => setQueueCount(v => String(Math.max(0, (Number(v) || 0) - 1)))}
-              >
-                −
-              </button>
-              <input
-                type="number"
-                inputMode="numeric"
-                className={`flex-1 ${inputCls} text-center`}
-                placeholder="0"
-                value={queueCount}
-                onChange={e => setQueueCount(e.target.value)}
-              />
-              <button
-                type="button"
-                className="w-11 h-11 rounded-lg border border-gray-300 text-xl font-bold text-gray-600 active:bg-gray-100 shrink-0 flex items-center justify-center"
-                onClick={() => setQueueCount(v => String((Number(v) || 0) + 1))}
-              >
-                ＋
-              </button>
-            </div>
+            <input
+              type="number"
+              inputMode="numeric"
+              className={`mt-1 ${inputCls}`}
+              placeholder="例：30"
+              value={queueCount}
+              onChange={e => setQueueCount(e.target.value)}
+            />
           </div>
         </div>
 
