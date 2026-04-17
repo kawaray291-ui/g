@@ -42,8 +42,14 @@ export default function HallListPage() {
         return arr.sort((a, b) => (b.savedMedals ?? -1) - (a.savedMedals ?? -1));
       case 'medals-asc':
         return arr.sort((a, b) => (a.savedMedals ?? Infinity) - (b.savedMedals ?? Infinity));
-      case 'chain-asc':
-        return arr.sort((a, b) => (a.chain ?? '').localeCompare(b.chain ?? '', 'ja'));
+      case 'chain-asc': {
+        const tagOrder = new Map(chainTags.map((t, i) => [t.name, i]));
+        return arr.sort((a, b) => {
+          const ai = tagOrder.has(a.chain ?? '') ? tagOrder.get(a.chain!)! : Infinity;
+          const bi = tagOrder.has(b.chain ?? '') ? tagOrder.get(b.chain!)! : Infinity;
+          return ai - bi;
+        });
+      }
       default:
         return arr;
     }
@@ -140,7 +146,7 @@ export default function HallListPage() {
               <option value="">並び替え: デフォルト</option>
               <option value="medals-desc">貯メダル: 多い順</option>
               <option value="medals-asc">貯メダル: 少ない順</option>
-              <option value="chain-asc">系列: あいうえお順</option>
+              <option value="chain-asc">系列: タグ順</option>
             </select>
           </div>
         </div>
