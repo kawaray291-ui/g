@@ -115,3 +115,12 @@ export interface DailyMachineData {
   memo?: string;
   updatedAt: string;
 }
+
+/** 初回アクセス時に雛型から作るスナップショット（以降は雛型変更の影響を受けない） */
+export interface DailySnapshot {
+  hallId: string;
+  date: string;
+  islands: Island[];
+  machines: Machine[];
+  createdAt: string;
+}

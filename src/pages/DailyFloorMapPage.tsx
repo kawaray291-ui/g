@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { hallStore, islandStore, machineStore, dailyMachineStore } from '../store';
-import { Machine, DailyMachineData } from '../types';
+import { hallStore, dailyMachineStore, dailySnapshotStore } from '../store';
+import { Machine, DailyMachineData, DailySnapshot } from '../types';
 import DailyFloorMapCanvas from '../components/DailyFloorMapCanvas';
 import DailyMachineModal from '../components/DailyMachineModal';
 
@@ -16,8 +16,11 @@ export default function DailyFloorMapPage() {
   const navigate = useNavigate();
 
   const hall = hallStore.getAll().find(h => h.id === hallId);
-  const islands = islandStore.getByHall(hallId!);
-  const allMachines = machineStore.getAll().filter(m => islands.some(i => i.id === m.islandId));
+
+  // 初回アクセス時に雛型からディープコピーして生成。以降は雛型変更の影響を受けない。
+  const [snapshot] = useState<DailySnapshot>(
+    () => dailySnapshotStore.getOrCreate(hallId!, date!)
+  );
 
   const [dailyData, setDailyData] = useState<DailyMachineData[]>(
     () => dailyMachineStore.getByHallDate(hallId!, date!)
@@ -29,7 +32,7 @@ export default function DailyFloorMapPage() {
   }
 
   function handleMachineTap(machineId: string) {
-    const machine = allMachines.find(m => m.id === machineId);
+    const machine = snapshot.machines.find(m => m.id === machineId);
     if (machine) setSelectedMachine(machine);
   }
 
@@ -78,8 +81,8 @@ export default function DailyFloorMapPage() {
       </div>
 
       <DailyFloorMapCanvas
-        islands={islands}
-        machines={allMachines}
+        islands={snapshot.islands}
+        machines={snapshot.machines}
         dailyData={dailyData}
         onMachineTap={handleMachineTap}
       />

@@ -1,4 +1,4 @@
-import { Hall, Island, Machine, MachineNote, VisitRecord, CalendarEntry, MachineType, ChainTag, DailyMachineData } from './types';
+import { Hall, Island, Machine, MachineNote, VisitRecord, CalendarEntry, MachineType, ChainTag, DailyMachineData, DailySnapshot } from './types';
 
 // ─── ID生成 ─────────────────────────────────────────────────
 let seq = Date.now();
@@ -317,5 +317,34 @@ export const dailyMachineStore = {
         d => !(d.hallId === hallId && d.machineId === machineId && d.date === date)
       )
     );
+  },
+};
+
+// ─── 日付別島図スナップショット ───────────────────────────────
+export const dailySnapshotStore = {
+  getByHallDate(hallId: string, date: string): DailySnapshot | undefined {
+    return read<DailySnapshot[]>('dailySnapshots', [])
+      .find(s => s.hallId === hallId && s.date === date);
+  },
+
+  /** 雛型からディープコピーしてスナップショットを生成・保存する */
+  createFromTemplate(hallId: string, date: string): DailySnapshot {
+    const islands = islandStore.getByHall(hallId);
+    const machines = machineStore.getAll().filter(m => islands.some(i => i.id === m.islandId));
+    const snapshot: DailySnapshot = {
+      hallId,
+      date,
+      islands: JSON.parse(JSON.stringify(islands)) as Island[],
+      machines: JSON.parse(JSON.stringify(machines)) as Machine[],
+      createdAt: new Date().toISOString(),
+    };
+    const all = read<DailySnapshot[]>('dailySnapshots', []);
+    write('dailySnapshots', [...all, snapshot]);
+    return snapshot;
+  },
+
+  /** スナップショットを取得、なければ雛型からコピーして生成 */
+  getOrCreate(hallId: string, date: string): DailySnapshot {
+    return this.getByHallDate(hallId, date) ?? this.createFromTemplate(hallId, date);
   },
 };
