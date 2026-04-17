@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Map } from 'lucide-react';
-import { hallStore, calendarStore } from '../store';
+import { hallStore, calendarStore, dailySnapshotStore } from '../store';
 import { Hall, CalendarEntry, ParkingType, ClosingStatus } from '../types';
 import {
   TextRow, NumberRow, ToggleRow, SelectRow,
@@ -34,6 +34,9 @@ export default function HallDetailPage() {
   const [calendarEntries, setCalendarEntries] = useState<CalendarEntry[]>(
     () => calendarStore.getByHall(hallId!)
   );
+  const [snapshotDates, setSnapshotDates] = useState<Set<string>>(
+    () => dailySnapshotStore.getDatesWithSnapshot(hallId!)
+  );
   const [calendarDate, setCalendarDate] = useState<string | null>(null);
   const [memo, setMemo] = useState(() => hall?.notes ?? '');
   const memoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -61,6 +64,10 @@ export default function HallDetailPage() {
 
   function refreshCalendar() {
     setCalendarEntries(calendarStore.getByHall(hallId!));
+  }
+
+  function refreshSnapshotDates() {
+    setSnapshotDates(dailySnapshotStore.getDatesWithSnapshot(hallId!));
   }
 
   const prefectureOptions = PREFECTURES.map(p => ({ value: p, label: p }));
@@ -174,6 +181,7 @@ export default function HallDetailPage() {
           <div className="bg-white rounded-xl shadow overflow-hidden" style={{ height: 520 }}>
             <CalendarView
               entries={calendarEntries}
+              snapshotDates={snapshotDates}
               onDayClick={date => setCalendarDate(date)}
             />
           </div>
@@ -212,6 +220,7 @@ export default function HallDetailPage() {
           onOpenDailyMap={() => {
             navigate(`/halls/${hallId}/map/daily/${calendarDate}`);
             setCalendarDate(null);
+            refreshSnapshotDates();
           }}
           onClose={() => setCalendarDate(null)}
         />

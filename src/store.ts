@@ -347,4 +347,13 @@ export const dailySnapshotStore = {
   getOrCreate(hallId: string, date: string): DailySnapshot {
     return this.getByHallDate(hallId, date) ?? this.createFromTemplate(hallId, date);
   },
+
+  /** スナップショットが存在する日付の Set を返す */
+  getDatesWithSnapshot(hallId: string): Set<string> {
+    return new Set(
+      read<DailySnapshot[]>('dailySnapshots', [])
+        .filter(s => s.hallId === hallId)
+        .map(s => s.date)
+    );
+  },
 };

@@ -4,6 +4,7 @@ import { CalendarEntry } from '../types';
 
 interface Props {
   entries: CalendarEntry[];
+  snapshotDates?: Set<string>;
   onDayClick: (date: string) => void;
 }
 
@@ -54,7 +55,7 @@ function fmtDiff(n: number): string {
   return (n >= 0 ? '+' : '') + n.toLocaleString();
 }
 
-export default function CalendarView({ entries, onDayClick }: Props) {
+export default function CalendarView({ entries, snapshotDates, onDayClick }: Props) {
   const today = new Date();
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -131,12 +132,13 @@ export default function CalendarView({ entries, onDayClick }: Props) {
       {/* 日付グリッド */}
       <div className="grid grid-cols-7 flex-1 overflow-y-auto">
         {grid.map((d, idx) => {
-          const dateStr    = toDateStr(d);
-          const isCurrent  = d.getMonth() === month;
-          const isToday    = dateStr === todayStr;
-          const entry      = entryMap.get(dateStr);
-          const dow        = d.getDay(); // 0=日, 6=土
-          const bg         = dayBg(entry, isCurrent);
+          const dateStr      = toDateStr(d);
+          const isCurrent    = d.getMonth() === month;
+          const isToday      = dateStr === todayStr;
+          const entry        = entryMap.get(dateStr);
+          const dow          = d.getDay(); // 0=日, 6=土
+          const bg           = dayBg(entry, isCurrent);
+          const hasSnapshot  = isCurrent && snapshotDates?.has(dateStr);
 
           return (
             <button
@@ -149,8 +151,9 @@ export default function CalendarView({ entries, onDayClick }: Props) {
               `}
               onClick={() => onDayClick(dateStr)}
             >
-              {/* 日番号 */}
-              <span className={`text-xs font-semibold leading-none ${
+              {/* 日番号行（スナップショットドット付き） */}
+              <span className="flex items-center justify-between w-full">
+                <span className={`text-xs font-semibold leading-none ${
                 !isCurrent
                   ? 'text-gray-300'
                   : isToday
@@ -160,8 +163,12 @@ export default function CalendarView({ entries, onDayClick }: Props) {
                   : dow === 6
                   ? 'text-blue-400'
                   : 'text-gray-700'
-              }`}>
-                {d.getDate()}
+                }`}>
+                  {d.getDate()}
+                </span>
+                {hasSnapshot && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                )}
               </span>
 
               {/* データ表示 */}

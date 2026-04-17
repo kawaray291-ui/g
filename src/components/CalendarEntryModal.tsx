@@ -53,22 +53,22 @@ export default function CalendarEntryModal({
         {/* ヘッダー */}
         <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-gray-100">
           <h2 className="text-base font-bold text-gray-800">{formatDate(date)}</h2>
-          <div className="flex items-center gap-2">
-            <button
-              className="flex items-center gap-1.5 text-sm text-indigo-600 font-medium bg-indigo-50 px-4 py-2 rounded-full active:bg-indigo-100"
-              onClick={onOpenDailyMap}
-            >
-              <Map size={15} />
-              島図
-            </button>
-            <button className="text-gray-400 active:text-gray-600 p-1 text-lg" onClick={onClose}>
-              ✕
-            </button>
-          </div>
+          <button className="text-gray-400 active:text-gray-600 p-1 text-lg" onClick={onClose}>
+            ✕
+          </button>
         </div>
 
         {/* フォーム */}
         <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-4">
+          {/* 島図ボタン（大） */}
+          <button
+            className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-bold rounded-xl active:bg-indigo-700"
+            style={{ fontSize: 18, paddingTop: 16, paddingBottom: 16, paddingLeft: 32, paddingRight: 32 }}
+            onClick={onOpenDailyMap}
+          >
+            <Map size={22} />
+            島図
+          </button>
           <div>
             <label className="text-sm font-medium text-gray-600">予定・メモ</label>
             <textarea
