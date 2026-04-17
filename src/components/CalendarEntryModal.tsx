@@ -44,6 +44,9 @@ export default function CalendarEntryModal({
   const allMediaSources  = mediaSourceStore.getAll();
   const allEventTemplates = eventTemplateStore.getAll();
 
+  // イベントセクションの開閉（選択済みがあれば開いた状態で初期化）
+  const [eventOpen, setEventOpen] = useState(() => (entry?.eventTemplateIds?.length ?? 0) > 0);
+
   // 媒体+イベントの行リスト
   const [rows, setRows] = useState<Row[]>(() => {
     const ids = entry?.eventTemplateIds ?? [];
@@ -161,8 +164,22 @@ export default function CalendarEntryModal({
           {/* イベント選択 */}
           {allMediaSources.length > 0 && (
             <div>
-              <label className="text-sm font-medium text-gray-600">イベント</label>
-              <div className="mt-2 flex flex-col gap-3">
+              <button
+                type="button"
+                className="w-full flex items-center justify-between"
+                onClick={() => setEventOpen(v => !v)}
+              >
+                <span className="text-sm font-medium text-gray-600">イベント</span>
+                <span className="flex items-center gap-1.5">
+                  {allSelectedIds.length > 0 && (
+                    <span className="text-xs bg-blue-600 text-white rounded-full px-1.5 py-0.5 font-bold">
+                      {allSelectedIds.length}
+                    </span>
+                  )}
+                  <span className="text-gray-400 text-xs">{eventOpen ? '▲' : '▼'}</span>
+                </span>
+              </button>
+              {eventOpen && <div className="mt-2 flex flex-col gap-3">
                 {rows.map((row, idx) => {
                   const mediaEvents = allEventTemplates.filter(e => e.mediaSourceId === row.mediaId);
                   const unselected  = mediaEvents.filter(e => !row.eventIds.includes(e.id));
@@ -216,7 +233,7 @@ export default function CalendarEntryModal({
                             return (
                               <span
                                 key={eid}
-                                className="flex items-center gap-1 bg-blue-600 text-white text-xs font-medium rounded-full px-2.5 py-1"
+                                className="flex items-center gap-1.5 bg-blue-600 text-white text-sm font-medium rounded-full px-3 py-1.5"
                               >
                                 {ev?.name ?? eid}
                                 <button
@@ -224,7 +241,7 @@ export default function CalendarEntryModal({
                                   className="opacity-80 active:opacity-100"
                                   onClick={() => removeEventFromRow(idx, eid)}
                                 >
-                                  <X size={11} />
+                                  <X size={13} />
                                 </button>
                               </span>
                             );
@@ -244,7 +261,7 @@ export default function CalendarEntryModal({
                   <Plus size={15} />
                   媒体を追加
                 </button>
-              </div>
+              </div>}
             </div>
           )}
 
