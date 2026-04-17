@@ -1,4 +1,4 @@
-import { Hall, Island, Machine, MachineNote, VisitRecord, CalendarEntry, MachineType, ChainTag, DailyMachineData, DailySnapshot } from './types';
+import { Hall, Island, Machine, MachineNote, VisitRecord, CalendarEntry, MachineType, ChainTag, DailyMachineData, DailySnapshot, MediaSource, EventTemplate } from './types';
 
 // ─── ID生成 ─────────────────────────────────────────────────
 let seq = Date.now();
@@ -226,7 +226,7 @@ export const calendarStore = {
   upsert(
     hallId: string,
     date: string,
-    patch: Partial<Pick<CalendarEntry, 'memo' | 'medalDiff' | 'avgRotation' | 'queueCount'>>
+    patch: Partial<Pick<CalendarEntry, 'memo' | 'medalDiff' | 'avgRotation' | 'queueCount' | 'eventTemplateId'>>
   ): CalendarEntry {
     const all = this.getAll();
     const existing = all.find(e => e.hallId === hallId && e.date === date);
@@ -370,5 +370,39 @@ export const dailySnapshotStore = {
         .filter(s => s.hallId === hallId)
         .map(s => s.date)
     );
+  },
+};
+
+// ─── 媒体 ─────────────────────────────────────────────────────
+export const mediaSourceStore = {
+  getAll: (): MediaSource[] => read('mediaSources', []),
+
+  add(name: string): MediaSource {
+    const item: MediaSource = { id: genId(), name, createdAt: new Date().toISOString() };
+    write('mediaSources', [...this.getAll(), item]);
+    return item;
+  },
+
+  delete(id: string): void {
+    write('mediaSources', this.getAll().filter(m => m.id !== id));
+    // 配下のイベントも削除
+    write('eventTemplates', eventTemplateStore.getAll().filter(e => e.mediaSourceId !== id));
+  },
+};
+
+// ─── イベントテンプレート ──────────────────────────────────────
+export const eventTemplateStore = {
+  getAll: (): EventTemplate[] => read('eventTemplates', []),
+  getByMedia: (mediaSourceId: string): EventTemplate[] =>
+    read<EventTemplate[]>('eventTemplates', []).filter(e => e.mediaSourceId === mediaSourceId),
+
+  add(mediaSourceId: string, name: string): EventTemplate {
+    const item: EventTemplate = { id: genId(), mediaSourceId, name, createdAt: new Date().toISOString() };
+    write('eventTemplates', [...this.getAll(), item]);
+    return item;
+  },
+
+  delete(id: string): void {
+    write('eventTemplates', this.getAll().filter(e => e.id !== id));
   },
 };

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Building2, Filter, X, ArrowUpDown, Tags } from 'lucide-react';
+import { Plus, Building2, Filter, X, ArrowUpDown, Tags, ArrowLeft } from 'lucide-react';
 import { hallStore, chainTagStore } from '../store';
 import { Hall, ChainTag } from '../types';
 import ChainManagerModal from '../components/ChainManagerModal';
@@ -90,6 +90,13 @@ export default function HallListPage() {
     <div className="flex flex-col h-full bg-gray-100">
       {/* ヘッダー */}
       <header className="bg-blue-800 text-white px-4 py-3 flex items-center gap-2 shadow">
+        <button
+          className="p-1 text-blue-200 active:text-white"
+          onClick={() => navigate(-1)}
+          aria-label="戻る"
+        >
+          <ArrowLeft size={22} />
+        </button>
         <Building2 size={22} />
         <h1 className="text-lg font-bold flex-1">パチンコホール管理</h1>
         {halls.length > 0 && (

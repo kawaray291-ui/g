@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Map } from 'lucide-react';
 import { CalendarEntry } from '../types';
+import { mediaSourceStore, eventTemplateStore } from '../store';
 
 interface SaveData {
   memo: string;
   medalDiff?: number;
   avgRotation?: number;
   queueCount?: number;
+  eventTemplateId?: string;
 }
 
 interface Props {
@@ -37,6 +39,18 @@ export default function CalendarEntryModal({
   const [queueCount, setQueueCount]   = useState(entry?.queueCount?.toString() ?? '');
   const [hasSaved, setHasSaved]       = useState(entry !== undefined);
 
+  // イベント選択
+  const allMediaSources = mediaSourceStore.getAll();
+  const [selectedMediaId, setSelectedMediaId] = useState<string>(() => {
+    if (entry?.eventTemplateId) {
+      const ev = eventTemplateStore.getAll().find(e => e.id === entry.eventTemplateId);
+      return ev?.mediaSourceId ?? '';
+    }
+    return '';
+  });
+  const [selectedEventId, setSelectedEventId] = useState<string>(entry?.eventTemplateId ?? '');
+  const mediaEvents = selectedMediaId ? eventTemplateStore.getByMedia(selectedMediaId) : [];
+
   const isFirstRender = useRef(true);
   const timerRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -49,8 +63,9 @@ export default function CalendarEntryModal({
       medalDiff:   medalDiffVal,
       avgRotation: avgRotation !== '' ? Number(avgRotation) : undefined,
       queueCount:  queueCount  !== '' ? Number(queueCount)  : undefined,
+      eventTemplateId: selectedEventId || undefined,
     };
-  }, [memo, medalSign, medalAbs, avgRotation, queueCount]);
+  }, [memo, medalSign, medalAbs, avgRotation, queueCount, selectedEventId]);
 
   // フィールド変更時にデバウンス自動保存
   useEffect(() => {
@@ -61,7 +76,7 @@ export default function CalendarEntryModal({
       setHasSaved(true);
     }, 800);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [memo, medalSign, medalAbs, avgRotation, queueCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [memo, medalSign, medalAbs, avgRotation, queueCount, selectedEventId, selectedMediaId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleClose() {
     // 未フラッシュのタイマーがあれば即時保存
@@ -101,6 +116,47 @@ export default function CalendarEntryModal({
             <Map size={22} />
             島図
           </button>
+
+          {/* イベント選択 */}
+          {allMediaSources.length > 0 && (
+            <div>
+              <label className="text-sm font-medium text-gray-600">イベント</label>
+              <select
+                className={`mt-1 ${inputCls}`}
+                value={selectedMediaId}
+                onChange={e => {
+                  setSelectedMediaId(e.target.value);
+                  setSelectedEventId('');
+                }}
+              >
+                <option value="">媒体を選択</option>
+                {allMediaSources.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+              {selectedMediaId && mediaEvents.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {mediaEvents.map(ev => (
+                    <button
+                      key={ev.id}
+                      type="button"
+                      className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                        selectedEventId === ev.id
+                          ? 'bg-blue-700 text-white border-blue-700'
+                          : 'bg-white text-gray-700 border-gray-300 active:bg-gray-50'
+                      }`}
+                      onClick={() => setSelectedEventId(prev => prev === ev.id ? '' : ev.id)}
+                    >
+                      {ev.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {selectedMediaId && mediaEvents.length === 0 && (
+                <p className="mt-1 text-xs text-gray-400">この媒体にイベントがありません</p>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="text-sm font-medium text-gray-600">予定・メモ</label>

@@ -90,6 +90,7 @@ export interface CalendarEntry {
   medalDiff?: number;     // 差枚数（±）
   avgRotation?: number;   // 平均回転率
   queueCount?: number;    // 並び人数
+  eventTemplateId?: string;
   updatedAt: string;
 }
 
@@ -116,6 +117,19 @@ export interface DailyMachineData {
   memo?: string;
   machineStatus?: 'new' | 'moved'; // 新台・移動台フラグ
   updatedAt: string;
+}
+
+export interface MediaSource {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface EventTemplate {
+  id: string;
+  mediaSourceId: string;
+  name: string;
+  createdAt: string;
 }
 
 /** 初回アクセス時に雛型から作るスナップショット（以降は雛型変更の影響を受けない） */
