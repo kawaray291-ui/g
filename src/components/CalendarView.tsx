@@ -48,7 +48,7 @@ function dayBg(entry?: CalendarEntry, isCurrent = true): string {
   if (entry.medalDiff !== undefined) {
     return entry.medalDiff >= 0 ? 'bg-green-50' : 'bg-red-50';
   }
-  return 'bg-blue-50';
+  return '';
 }
 
 /** 差枚数の表示文字列 */
