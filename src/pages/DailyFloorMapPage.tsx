@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { hallStore, dailyMachineStore, dailySnapshotStore } from '../store';
 import { Machine, DailyMachineData, DailySnapshot } from '../types';
 import DailyFloorMapCanvas from '../components/DailyFloorMapCanvas';
@@ -11,21 +11,36 @@ function formatDate(dateStr: string): string {
   return `${y}年${m}月${d}日`;
 }
 
+function offsetDate(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + days);
+  return [
+    dt.getFullYear(),
+    String(dt.getMonth() + 1).padStart(2, '0'),
+    String(dt.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
 export default function DailyFloorMapPage() {
   const { hallId, date } = useParams<{ hallId: string; date: string }>();
   const navigate = useNavigate();
 
   const hall = hallStore.getAll().find(h => h.id === hallId);
 
-  // 初回アクセス時に雛型からディープコピーして生成。以降は雛型変更の影響を受けない。
-  const [snapshot] = useState<DailySnapshot>(
+  const [snapshot, setSnapshot] = useState<DailySnapshot>(
     () => dailySnapshotStore.getOrCreate(hallId!, date!)
   );
-
   const [dailyData, setDailyData] = useState<DailyMachineData[]>(
     () => dailyMachineStore.getByHallDate(hallId!, date!)
   );
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
+
+  // date パラメータが変わったときにスナップショット・日次データを差し替える
+  useEffect(() => {
+    setSnapshot(dailySnapshotStore.getOrCreate(hallId!, date!));
+    setDailyData(dailyMachineStore.getByHallDate(hallId!, date!));
+    setSelectedMachine(null);
+  }, [hallId, date]);
 
   function refreshDaily() {
     setDailyData(dailyMachineStore.getByHallDate(hallId!, date!));
@@ -34,6 +49,10 @@ export default function DailyFloorMapPage() {
   function handleMachineTap(machineId: string) {
     const machine = snapshot.machines.find(m => m.id === machineId);
     if (machine) setSelectedMachine(machine);
+  }
+
+  function goToDate(newDate: string) {
+    navigate(`/halls/${hallId}/map/daily/${newDate}`, { replace: true });
   }
 
   if (!hall) {
@@ -55,14 +74,30 @@ export default function DailyFloorMapPage() {
         <button onClick={() => navigate(-1)} className="active:opacity-70">
           <ArrowLeft size={22} />
         </button>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-sm font-bold truncate">{hall.name}</h1>
-          <p className="text-xs text-indigo-300">{formatDate(date!)}</p>
-        </div>
-        <span className="text-xs text-indigo-300 bg-indigo-700 px-2 py-1 rounded-full">
+        <h1 className="text-sm font-bold flex-1 truncate">{hall.name}</h1>
+        <span className="text-xs text-indigo-300 bg-indigo-700 px-2 py-1 rounded-full shrink-0">
           デイリー島図
         </span>
       </header>
+
+      {/* 日付ナビゲーション */}
+      <div className="bg-indigo-700 text-white flex items-center">
+        <button
+          className="flex items-center gap-0.5 px-4 py-2 text-sm font-medium text-indigo-200 active:bg-indigo-600 shrink-0"
+          onClick={() => goToDate(offsetDate(date!, -1))}
+        >
+          <ChevronLeft size={16} />前日
+        </button>
+        <p className="flex-1 text-center text-sm font-semibold py-2">
+          {formatDate(date!)}
+        </p>
+        <button
+          className="flex items-center gap-0.5 px-4 py-2 text-sm font-medium text-indigo-200 active:bg-indigo-600 shrink-0"
+          onClick={() => goToDate(offsetDate(date!, +1))}
+        >
+          翌日<ChevronRight size={16} />
+        </button>
+      </div>
 
       {/* 凡例 */}
       <div className="bg-indigo-50 px-4 py-1.5 flex items-center gap-3 border-b border-indigo-100 text-xs text-gray-500 flex-wrap">
