@@ -90,7 +90,21 @@ export interface CalendarEntry {
   medalDiff?: number;     // 差枚数（±）
   avgRotation?: number;   // 平均回転率
   queueCount?: number;    // 並び人数
+  eventTemplateIds?: string[];  // 選択済みイベントID（複数）
   updatedAt: string;
+}
+
+export interface MediaSource {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface EventTemplate {
+  id: string;
+  mediaSourceId: string;
+  name: string;
+  createdAt: string;
 }
 
 export interface VisitRecord {

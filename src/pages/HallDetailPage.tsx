@@ -210,7 +210,6 @@ export default function HallDetailPage() {
           onSave={data => {
             calendarStore.upsert(hallId!, calendarDate, data);
             refreshCalendar();
-            setCalendarDate(null);
           }}
           onDelete={() => {
             calendarStore.delete(hallId!, calendarDate);
