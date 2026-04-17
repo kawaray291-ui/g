@@ -210,7 +210,7 @@ export default function CalendarEntryModal({
                       </div>
 
                       {/* イベントドロップダウン（媒体選択後に表示） */}
-                      {row.mediaId && (
+                      {!!row.mediaId && (
                         <select
                           className={selectCls}
                           value=""
