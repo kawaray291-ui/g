@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Map, Plus, X } from 'lucide-react';
+import { Map as MapIcon, Plus, X } from 'lucide-react';
 import { CalendarEntry } from '../types';
 import { mediaSourceStore, eventTemplateStore } from '../store';
 
@@ -154,7 +154,7 @@ export default function CalendarEntryModal({
             style={{ fontSize: 18, paddingTop: 16, paddingBottom: 16 }}
             onClick={onOpenDailyMap}
           >
-            <Map size={22} />
+            <MapIcon size={22} />
             島図
           </button>
 

@@ -1,7 +1,7 @@
 export type MachineType = 'pachinko' | 'slot';
 export type ParkingType = 'free' | 'paid' | 'none';
 export type ClosingStatus = '休業' | '閉店';
-export type SettingRating = 1 | 2 | 3 | 4 | 5;
+export type SettingRating = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 // レートごとの台数
 export interface HallRates {
@@ -124,9 +124,11 @@ export interface DailyMachineData {
   machineId: string;
   date: string;              // YYYY-MM-DD
   settingRating?: SettingRating;
+  confirmedSetting?: SettingRating;
   medalDiff?: number;        // 差枚数（±）
   rotationRate?: number;     // 回転率
   memo?: string;
+  machineStatus?: 'new' | 'moved';
   updatedAt: string;
 }
 
