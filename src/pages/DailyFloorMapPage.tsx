@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Map } from 'lucide-react';
 import { hallStore, dailyMachineStore, dailySnapshotStore } from '../store';
 import { SETTING_COLORS } from '../constants';
 import { Machine, DailyMachineData, DailySnapshot } from '../types';
@@ -89,6 +89,12 @@ export default function DailyFloorMapPage() {
           <ArrowLeft size={22} />
         </button>
         <h1 className="text-sm font-bold flex-1 truncate">{hall.name}</h1>
+        <button
+          className="flex items-center gap-1 text-xs text-indigo-200 bg-indigo-700 px-2.5 py-1 rounded-full active:bg-indigo-600 shrink-0"
+          onClick={() => navigate(`/halls/${hallId}/map`)}
+        >
+          <Map size={12} />デフォルト
+        </button>
         <span className="text-xs text-indigo-300 bg-indigo-700 px-2 py-1 rounded-full shrink-0">
           デイリー島図
         </span>
