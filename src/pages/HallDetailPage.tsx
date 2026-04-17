@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Map, History } from 'lucide-react';
-import { hallStore, calendarStore, dailySnapshotStore, registeredFloorMapStore } from '../store';
+import { ArrowLeft, Map } from 'lucide-react';
+import { hallStore, calendarStore, dailySnapshotStore } from '../store';
 import { Hall, CalendarEntry, ParkingType, ClosingStatus } from '../types';
 import {
   TextRow, NumberRow, ToggleRow, SelectRow,
@@ -37,9 +37,6 @@ export default function HallDetailPage() {
   const [snapshotDates, setSnapshotDates] = useState<Set<string>>(
     () => dailySnapshotStore.getDatesWithSnapshot(hallId!)
   );
-  const [registeredDates, setRegisteredDates] = useState<string[]>(
-    () => registeredFloorMapStore.getByHall(hallId!)
-  );
   const [calendarDate, setCalendarDate] = useState<string | null>(null);
   const [memo, setMemo] = useState(() => hall?.notes ?? '');
   const memoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -71,7 +68,6 @@ export default function HallDetailPage() {
 
   function refreshSnapshotDates() {
     setSnapshotDates(dailySnapshotStore.getDatesWithSnapshot(hallId!));
-    setRegisteredDates(registeredFloorMapStore.getByHall(hallId!));
   }
 
   const prefectureOptions = PREFECTURES.map(p => ({ value: p, label: p }));
@@ -188,49 +184,6 @@ export default function HallDetailPage() {
               snapshotDates={snapshotDates}
               onDayClick={date => setCalendarDate(date)}
             />
-          </div>
-        </div>
-
-        {/* ─── 島図 ─── */}
-        <div className="mt-4 mx-3">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1 mb-1">島図</p>
-          <div className="bg-white rounded-xl shadow overflow-hidden divide-y divide-gray-100">
-            {/* デフォルト島図 */}
-            <button
-              className="w-full flex items-center gap-3 px-4 py-3 active:bg-gray-50 text-left"
-              onClick={() => navigate(`/halls/${hallId}/map`)}
-            >
-              <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-                <Map size={16} className="text-blue-600" />
-              </div>
-              <span className="text-sm font-semibold text-gray-800">デフォルト島図</span>
-            </button>
-
-            {/* 手動登録の過去の島図 */}
-            {registeredDates.length > 0 && (
-              <>
-                <div className="px-4 py-2 bg-gray-50">
-                  <span className="text-xs font-medium text-gray-500 flex items-center gap-1">
-                    <History size={12} />過去の島図（{registeredDates.length}件）
-                  </span>
-                </div>
-                {registeredDates.map(d => {
-                  const [y, m, day] = d.split('-').map(Number);
-                  return (
-                    <button
-                      key={d}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 active:bg-gray-50 text-left"
-                      onClick={() => navigate(`/halls/${hallId}/map/daily/${d}`)}
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
-                        <History size={14} className="text-indigo-400" />
-                      </div>
-                      <span className="text-sm text-gray-700">{y}年{m}月{day}日</span>
-                    </button>
-                  );
-                })}
-              </>
-            )}
           </div>
         </div>
 
