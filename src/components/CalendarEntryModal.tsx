@@ -108,14 +108,30 @@ export default function CalendarEntryModal({
 
           <div>
             <label className="text-sm font-medium text-gray-600">並び人数</label>
-            <input
-              type="number"
-              inputMode="numeric"
-              className={`mt-1 ${inputCls}`}
-              placeholder="例：30"
-              value={queueCount}
-              onChange={e => setQueueCount(e.target.value)}
-            />
+            <div className="mt-1 flex items-center gap-2">
+              <button
+                type="button"
+                className="w-11 h-11 rounded-lg border border-gray-300 text-xl font-bold text-gray-600 active:bg-gray-100 shrink-0 flex items-center justify-center"
+                onClick={() => setQueueCount(v => String(Math.max(0, (Number(v) || 0) - 1)))}
+              >
+                −
+              </button>
+              <input
+                type="number"
+                inputMode="numeric"
+                className={`flex-1 ${inputCls} text-center`}
+                placeholder="0"
+                value={queueCount}
+                onChange={e => setQueueCount(e.target.value)}
+              />
+              <button
+                type="button"
+                className="w-11 h-11 rounded-lg border border-gray-300 text-xl font-bold text-gray-600 active:bg-gray-100 shrink-0 flex items-center justify-center"
+                onClick={() => setQueueCount(v => String((Number(v) || 0) + 1))}
+              >
+                ＋
+              </button>
+            </div>
           </div>
         </div>
 
