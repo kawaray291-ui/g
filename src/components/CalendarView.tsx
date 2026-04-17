@@ -146,7 +146,7 @@ export default function CalendarView({ entries, snapshotDates, onDayClick }: Pro
             <button
               key={idx}
               className={`
-                min-h-[72px] p-1 border-b border-r border-gray-100 text-left flex flex-col
+                min-h-[100px] p-1 border-b border-r border-gray-100 text-left flex flex-col
                 active:brightness-95
                 ${bg}
                 ${isToday ? 'ring-2 ring-inset ring-blue-400' : ''}

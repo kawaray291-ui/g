@@ -178,7 +178,7 @@ export default function HallDetailPage() {
         {/* ─── カレンダー ─── */}
         <div className="mt-4 mx-3">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1 mb-1">カレンダー</p>
-          <div className="bg-white rounded-xl shadow overflow-hidden" style={{ height: 520 }}>
+          <div className="bg-white rounded-xl shadow overflow-hidden" style={{ height: 700 }}>
             <CalendarView
               entries={calendarEntries}
               snapshotDates={snapshotDates}
