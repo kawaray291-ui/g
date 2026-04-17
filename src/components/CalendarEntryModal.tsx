@@ -14,7 +14,7 @@ interface Props {
   entry?: CalendarEntry;
   onSave: (data: SaveData) => void;
   onDelete: () => void;
-  onGoToMap: () => void;
+  onOpenDailyMap: () => void;
   onClose: () => void;
 }
 
@@ -24,7 +24,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function CalendarEntryModal({
-  date, entry, onSave, onDelete, onGoToMap, onClose,
+  date, entry, onSave, onDelete, onOpenDailyMap, onClose,
 }: Props) {
   const [memo, setMemo]               = useState(entry?.memo ?? '');
   const [medalDiff, setMedalDiff]     = useState(entry?.medalDiff?.toString() ?? '');
@@ -55,11 +55,11 @@ export default function CalendarEntryModal({
           <h2 className="text-base font-bold text-gray-800">{formatDate(date)}</h2>
           <div className="flex items-center gap-2">
             <button
-              className="flex items-center gap-1 text-xs text-blue-600 font-medium bg-blue-50 px-3 py-1.5 rounded-full active:bg-blue-100"
-              onClick={onGoToMap}
+              className="flex items-center gap-1 text-xs text-indigo-600 font-medium bg-indigo-50 px-3 py-1.5 rounded-full active:bg-indigo-100"
+              onClick={onOpenDailyMap}
             >
               <Map size={13} />
-              島図を見る
+              島図を入力
             </button>
             <button className="text-gray-400 active:text-gray-600 p-1 text-lg" onClick={onClose}>
               ✕

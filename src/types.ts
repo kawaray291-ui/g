@@ -1,6 +1,7 @@
 export type MachineType = 'pachinko' | 'slot';
 export type ParkingType = 'free' | 'paid' | 'none';
 export type ClosingStatus = '休業' | '閉店';
+export type SettingRating = 1 | 2 | 3 | 4 | 5;
 
 // レートごとの台数
 export interface HallRates {
@@ -74,9 +75,6 @@ export interface Machine {
   y?: number;         // キャンバス上のY座標
 }
 
-// 設定の入りやすさ: 1(入りにくい)〜5(入りやすい)
-export type SettingRating = 1 | 2 | 3 | 4 | 5;
-
 export interface MachineNote {
   machineId: string;
   settingRating?: SettingRating;
@@ -103,4 +101,17 @@ export interface VisitRecord {
   bigBonusCount?: number; // 大当たり/BIG回数
   notes?: string;
   createdAt: string;
+}
+
+/** 日付別・台別のデイリー記録 */
+export interface DailyMachineData {
+  id: string;
+  hallId: string;
+  machineId: string;
+  date: string;              // YYYY-MM-DD
+  settingRating?: SettingRating;
+  medalDiff?: number;        // 差枚数（±）
+  rotationRate?: number;     // 回転率
+  memo?: string;
+  updatedAt: string;
 }

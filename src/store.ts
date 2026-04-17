@@ -1,4 +1,4 @@
-import { Hall, Island, Machine, MachineNote, VisitRecord, CalendarEntry, MachineType, ChainTag } from './types';
+import { Hall, Island, Machine, MachineNote, VisitRecord, CalendarEntry, MachineType, ChainTag, DailyMachineData } from './types';
 
 // ─── ID生成 ─────────────────────────────────────────────────
 let seq = Date.now();
@@ -272,4 +272,50 @@ export const chainTagStore = {
     return raw as ChainTag[];
   },
   save: (tags: ChainTag[]): void => write('chainTags', tags),
+};
+
+// ─── 日付別台データ ────────────────────────────────────────────
+export const dailyMachineStore = {
+  getAll: (): DailyMachineData[] => read('dailyMachineData', []),
+
+  getByHallDate: (hallId: string, date: string): DailyMachineData[] =>
+    read<DailyMachineData[]>('dailyMachineData', [])
+      .filter(d => d.hallId === hallId && d.date === date),
+
+  upsert(
+    hallId: string,
+    machineId: string,
+    date: string,
+    patch: Partial<Pick<DailyMachineData, 'settingRating' | 'medalDiff' | 'rotationRate' | 'memo'>>
+  ): DailyMachineData {
+    const all = this.getAll();
+    const existing = all.find(
+      d => d.hallId === hallId && d.machineId === machineId && d.date === date
+    );
+    const entry: DailyMachineData = {
+      id: existing?.id ?? genId(),
+      hallId,
+      machineId,
+      date,
+      ...existing,
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
+    write(
+      'dailyMachineData',
+      existing
+        ? all.map(d => (d.id === entry.id ? entry : d))
+        : [...all, entry]
+    );
+    return entry;
+  },
+
+  delete(hallId: string, machineId: string, date: string): void {
+    write(
+      'dailyMachineData',
+      this.getAll().filter(
+        d => !(d.hallId === hallId && d.machineId === machineId && d.date === date)
+      )
+    );
+  },
 };

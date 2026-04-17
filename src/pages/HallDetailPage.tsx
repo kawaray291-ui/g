@@ -209,8 +209,8 @@ export default function HallDetailPage() {
             refreshCalendar();
             setCalendarDate(null);
           }}
-          onGoToMap={() => {
-            navigate(`/halls/${hallId}/map`);
+          onOpenDailyMap={() => {
+            navigate(`/halls/${hallId}/map/daily/${calendarDate}`);
             setCalendarDate(null);
           }}
           onClose={() => setCalendarDate(null)}
