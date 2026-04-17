@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { CalendarEntry } from '../types';
+import { eventTemplateStore } from '../store';
 
 interface Props {
   entries: CalendarEntry[];
@@ -57,6 +58,7 @@ function fmtDiff(n: number): string {
 
 export default function CalendarView({ entries, snapshotDates, onDayClick }: Props) {
   const today = new Date();
+  const allEventTemplates = eventTemplateStore.getAll();
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
 
@@ -175,6 +177,14 @@ export default function CalendarView({ entries, snapshotDates, onDayClick }: Pro
               {/* データ表示 */}
               {entry && isCurrent && (
                 <div className="mt-0.5 flex flex-col gap-0.5 overflow-hidden w-full">
+                  {entry.eventTemplateIds && entry.eventTemplateIds.length > 0 && (
+                    <span className="text-xs text-purple-600 font-medium leading-none truncate">
+                      {entry.eventTemplateIds
+                        .map(id => allEventTemplates.find(e => e.id === id)?.name)
+                        .filter(Boolean)
+                        .join('・')}
+                    </span>
+                  )}
                   {entry.queueCount !== undefined && (
                     <span className="text-xs text-indigo-600 font-medium leading-none">
                       👥{entry.queueCount}人
