@@ -26,7 +26,10 @@ export default function DailyMachineCell({ machine, daily, islandColor, onClick 
       <div className="px-1.5 py-1 flex flex-col gap-0.5 relative min-h-[56px]">
         {/* 新台・移動台インジケータ */}
         {daily?.machineStatus && (
-          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
+          <span
+            className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-red-500"
+            style={{ boxShadow: '0 0 0 2px white' }}
+          />
         )}
 
         {/* 台番号 */}
