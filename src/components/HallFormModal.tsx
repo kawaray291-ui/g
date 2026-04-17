@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
-import { Hall, HallRates, ParkingType } from '../types';
+import { Hall, HallRates, ParkingType, ChainTag } from '../types';
 import { PREFECTURES } from '../constants';
+import { chainTagStore } from '../store';
 
 // ─── フォーム型 ───────────────────────────────────────────────
 export interface HallFormState {
@@ -114,6 +115,7 @@ interface Props {
 
 export default function HallFormModal({ mode, initialForm, onSave, onClose }: Props) {
   const [form, setForm] = useState<HallFormState>(initialForm);
+  const [chainTags] = useState<ChainTag[]>(() => chainTagStore.getAll());
   const set = (patch: Partial<HallFormState>) => setForm(f => ({ ...f, ...patch }));
 
   function addLink() {
@@ -183,8 +185,31 @@ export default function HallFormModal({ mode, initialForm, onSave, onClose }: Pr
           <div className="flex gap-2">
             <div className="flex-1">
               <label className="text-sm font-medium text-gray-600">系列名</label>
-              <input className={`mt-1 ${inputCls}`} placeholder="例：マルハン"
-                value={form.chain} onChange={e => set({ chain: e.target.value })} />
+              <div className="mt-1 relative border border-gray-300 rounded-lg px-3 py-2 min-h-[42px] flex items-center bg-white">
+                {(() => {
+                  const tag = chainTags.find(t => t.name === form.chain);
+                  return tag ? (
+                    <span
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border pointer-events-none"
+                      style={{ backgroundColor: tag.color + '28', borderColor: tag.color + '55', color: tag.color }}
+                    >
+                      {tag.name}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-gray-400 pointer-events-none">なし</span>
+                  );
+                })()}
+                <select
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  value={form.chain}
+                  onChange={e => set({ chain: e.target.value })}
+                >
+                  <option value="">なし</option>
+                  {chainTags.map(t => (
+                    <option key={t.id} value={t.name}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div className="flex-1">
               <label className="text-sm font-medium text-gray-600">都道府県</label>
