@@ -11,34 +11,27 @@ interface Props {
 export default function DailyMachineCell({ machine, daily, islandColor, onClick }: Props) {
   const confirmed = daily?.confirmedSetting ? SETTING_COLORS[daily.confirmedSetting] : null;
   const predictionColor = daily?.settingRating ? SETTING_COLORS[daily.settingRating] : null;
-  const hasData = daily && (
-    daily.settingRating !== undefined ||
-    daily.confirmedSetting !== undefined ||
+  const hasDataOnly = daily && !predictionColor && !confirmed && (
     daily.medalDiff !== undefined ||
     daily.rotationRate !== undefined ||
     daily.memo
   );
 
+  // 推測設定あり（確定なし）→推測色の帯、それ以外→島カラー帯
+  const topBorderColor = predictionColor && !confirmed ? predictionColor.bg : islandColor;
+
   return (
     <div
       className="w-20 rounded-lg shadow border border-gray-200 overflow-hidden select-none cursor-pointer active:brightness-95"
       style={{
-        borderTop: `3px solid ${islandColor}`,
+        borderTop: `4px solid ${topBorderColor}`,
         backgroundColor: confirmed?.bg ?? 'white',
       }}
       onClick={onClick}
     >
       <div className="px-1.5 py-1 flex flex-col gap-0.5 relative min-h-[56px]">
-        {/* 設定推測ドット（確定がない場合のみ、確定ある場合は確定色で背景が塗られているのでドット不要） */}
-        {predictionColor && !confirmed && (
-          <span
-            className="absolute top-1 right-1 w-2 h-2 rounded-full"
-            style={{ backgroundColor: predictionColor.bg }}
-            title={`推測: ${predictionColor.label}`}
-          />
-        )}
-        {/* 推測のみあり（設定なし） */}
-        {hasData && !predictionColor && !confirmed && (
+        {/* データあり（設定なし）インジケータ */}
+        {hasDataOnly && (
           <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-300" />
         )}
 

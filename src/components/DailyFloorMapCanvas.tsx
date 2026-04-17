@@ -10,6 +10,9 @@ const CELL_H = 70;
 const LABEL_H = 32;
 const MIN_SCALE = 0.2;
 const MAX_SCALE = 4;
+const CELL_VISUAL_W = 80;
+const CELL_VISUAL_H = 64;
+const GROUP_PAD = 12;
 
 const ISLAND_COLORS = [
   '#2563eb', '#7c3aed', '#db2777', '#d97706', '#059669',
@@ -33,6 +36,22 @@ function getMachinePos(machine: Machine, island: Island): { x: number; y: number
 
 function clampScale(s: number) {
   return Math.max(MIN_SCALE, Math.min(MAX_SCALE, s));
+}
+
+function getIslandBounds(island: Island, islandMachines: Machine[]) {
+  if (islandMachines.length === 0) {
+    return { x: island.x - GROUP_PAD, y: island.y - GROUP_PAD, w: 80 + GROUP_PAD * 2, h: LABEL_H + GROUP_PAD * 2 };
+  }
+  const positions = islandMachines.map(m => getMachinePos(m, island));
+  const minX = Math.min(island.x, ...positions.map(p => p.x));
+  const maxX = Math.max(island.x + 80, ...positions.map(p => p.x + CELL_VISUAL_W));
+  const maxY = Math.max(...positions.map(p => p.y + CELL_VISUAL_H));
+  return {
+    x: minX - GROUP_PAD,
+    y: island.y - GROUP_PAD,
+    w: maxX - minX + GROUP_PAD * 2,
+    h: maxY - island.y + GROUP_PAD * 2,
+  };
 }
 
 export default function DailyFloorMapCanvas({ islands, machines, dailyData, onMachineTap }: Props) {
@@ -193,6 +212,26 @@ export default function DailyFloorMapCanvas({ islands, machines, dailyData, onMa
           </defs>
           <rect width="100%" height="100%" fill="url(#dfl-grid)" />
         </svg>
+
+        {/* 島グループ背景 */}
+        {islands.map(island => {
+          const color = islandColorMap.get(island.id) ?? '#6b7280';
+          const islandMachines = machines.filter(m => m.islandId === island.id);
+          const { x, y, w, h } = getIslandBounds(island, islandMachines);
+          return (
+            <div
+              key={`bg-${island.id}`}
+              style={{
+                position: 'absolute',
+                left: x, top: y, width: w, height: h,
+                backgroundColor: color,
+                opacity: 0.08,
+                borderRadius: 16,
+                border: `1.5px solid ${color}`,
+              }}
+            />
+          );
+        })}
 
         {/* 島ラベル */}
         {islands.map(island => {
