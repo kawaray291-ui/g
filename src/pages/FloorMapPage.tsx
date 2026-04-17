@@ -1,14 +1,12 @@
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, List, CalendarDays, Eye, Pencil } from 'lucide-react';
-import { hallStore, islandStore, machineStore, noteStore, calendarStore } from '../store';
-import { Island, Machine, MachineNote, MachineType, CalendarEntry } from '../types';
+import { ArrowLeft, Plus, List, Eye, Pencil } from 'lucide-react';
+import { hallStore, islandStore, machineStore, noteStore } from '../store';
+import { Island, Machine, MachineNote, MachineType } from '../types';
 import FloorMapCanvas from '../components/FloorMapCanvas';
 import AddMachineModal from '../components/AddMachineModal';
-import CalendarView from '../components/CalendarView';
-import CalendarEntryModal from '../components/CalendarEntryModal';
 
-type Tab = 'map' | 'list' | 'calendar';
+type Tab = 'map' | 'list';
 
 interface IslandFormState {
   name: string;
@@ -38,9 +36,6 @@ export default function FloorMapPage() {
     machineStore.getAll().filter(m => islands.some(i => i.id === m.islandId))
   );
   const [notes, setNotes] = useState<MachineNote[]>(() => noteStore.getAll());
-  const [calendarEntries, setCalendarEntries] = useState<CalendarEntry[]>(
-    () => calendarStore.getByHall(hallId!)
-  );
 
   const [tab, setTab] = useState<Tab>('map');
   const [isEditMode, setIsEditMode] = useState(false);
@@ -49,18 +44,11 @@ export default function FloorMapPage() {
   const [form, setForm] = useState<IslandFormState>(defaultForm);
   const [deleteTarget, setDeleteTarget] = useState<Island | null>(null);
 
-  // カレンダーモーダル
-  const [calendarDate, setCalendarDate] = useState<string | null>(null);
-
   function refresh() {
     const newIslands = islandStore.getByHall(hallId!);
     setIslands(newIslands);
     setMachines(machineStore.getAll().filter(m => newIslands.some(i => i.id === m.islandId)));
     setNotes(noteStore.getAll());
-  }
-
-  function refreshCalendar() {
-    setCalendarEntries(calendarStore.getByHall(hallId!));
   }
 
   function openAdd() {
@@ -174,8 +162,7 @@ export default function FloorMapPage() {
               </svg>
             ),
           },
-          { key: 'list'     as Tab, label: '島一覧',     icon: <List size={14} /> },
-          { key: 'calendar' as Tab, label: 'カレンダー', icon: <CalendarDays size={14} /> },
+          { key: 'list' as Tab, label: '島一覧', icon: <List size={14} /> },
         ]).map(({ key, label, icon }) => (
           <button
             key={key}
@@ -202,15 +189,6 @@ export default function FloorMapPage() {
           onIslandEdit={openEdit}
           onIslandDelete={setDeleteTarget}
         />
-      )}
-
-      {tab === 'calendar' && (
-        <div className="flex-1 overflow-hidden flex flex-col">
-          <CalendarView
-            entries={calendarEntries}
-            onDayClick={date => setCalendarDate(date)}
-          />
-        </div>
       )}
 
       {tab === 'list' && (
@@ -423,29 +401,6 @@ export default function FloorMapPage() {
           islands={islands}
           onAdd={handleAddMachine}
           onClose={() => setAddMachineOpen(false)}
-        />
-      )}
-
-      {/* カレンダーエントリモーダル */}
-      {calendarDate && (
-        <CalendarEntryModal
-          date={calendarDate}
-          entry={calendarEntries.find(e => e.date === calendarDate)}
-          onSave={data => {
-            calendarStore.upsert(hallId!, calendarDate, data);
-            refreshCalendar();
-            setCalendarDate(null);
-          }}
-          onDelete={() => {
-            calendarStore.delete(hallId!, calendarDate);
-            refreshCalendar();
-            setCalendarDate(null);
-          }}
-          onGoToMap={() => {
-            setTab('map');
-            setCalendarDate(null);
-          }}
-          onClose={() => setCalendarDate(null)}
         />
       )}
 
