@@ -55,6 +55,19 @@ export default function DailyFloorMapPage() {
     navigate(`/halls/${hallId}/map/daily/${newDate}`, { replace: true });
   }
 
+  function handleDeleteData() {
+    if (!window.confirm(`${formatDate(date!)}の入力情報をすべて削除しますか？`)) return;
+    dailyMachineStore.deleteByHallDate(hallId!, date!);
+    refreshDaily();
+  }
+
+  function handleDeleteSnapshot() {
+    if (!window.confirm(`${formatDate(date!)}のデイリー島図をすべて削除しますか？\n島図・入力情報が両方削除されます。`)) return;
+    dailyMachineStore.deleteByHallDate(hallId!, date!);
+    dailySnapshotStore.delete(hallId!, date!);
+    navigate(-1);
+  }
+
   if (!hall) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -96,6 +109,22 @@ export default function DailyFloorMapPage() {
           onClick={() => goToDate(offsetDate(date!, +1))}
         >
           翌日<ChevronRight size={16} />
+        </button>
+      </div>
+
+      {/* 削除アクション */}
+      <div className="bg-white border-b border-gray-100 px-3 py-2 flex gap-2">
+        <button
+          className="text-xs text-red-500 border border-red-200 rounded-lg px-3 py-1.5 active:bg-red-50"
+          onClick={handleDeleteData}
+        >
+          入力情報を削除
+        </button>
+        <button
+          className="text-xs text-red-600 border border-red-300 bg-red-50 rounded-lg px-3 py-1.5 active:bg-red-100"
+          onClick={handleDeleteSnapshot}
+        >
+          島図ごと削除
         </button>
       </div>
 
