@@ -71,7 +71,7 @@ export default function MachineModelDBPage() {
         <button className="p-1 text-blue-200 active:text-white" onClick={() => navigate(-1)}>
           <ArrowLeft size={22} />
         </button>
-        <h1 className="text-lg font-bold flex-1">台DB</h1>
+        <h1 className="text-lg font-bold flex-1">機種DB</h1>
         <button className="p-2 text-blue-200 active:text-white" onClick={openAdd}>
           <Plus size={22} />
         </button>

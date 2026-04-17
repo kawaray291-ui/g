@@ -35,7 +35,7 @@ export default function MachineDBPage() {
             <Monitor size={30} className="text-teal-600" />
           </div>
           <div className="text-left">
-            <p className="text-lg font-bold text-gray-800">台DB</p>
+            <p className="text-lg font-bold text-gray-800">機種DB</p>
             <p className="text-sm text-gray-500 mt-0.5">機種情報を管理</p>
           </div>
         </button>

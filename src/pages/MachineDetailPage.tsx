@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, StickyNote, Info } from 'lucide-react';
-import { machineStore, islandStore, noteStore, hallStore } from '../store';
+import { machineStore, islandStore, noteStore, hallStore, machineModelStore } from '../store';
 import { MachineNote, SettingRating } from '../types';
 
 type Tab = 'memo' | 'info';
@@ -48,8 +48,9 @@ export default function MachineDetailPage() {
   const [settingRating, setSettingRating] = useState<SettingRating | undefined>(note?.settingRating);
   const [memoSaved, setMemoSaved] = useState(false);
 
+  const allModels = machineModelStore.getAll();
   const [editingModel, setEditingModel] = useState(false);
-  const [modelName, setModelName] = useState(machine?.modelName ?? '');
+  const [machineModelId, setMachineModelId] = useState(machine?.machineModelId ?? '');
   const [machineNumber, setMachineNumber] = useState(machine?.number ?? '');
 
   function saveMemo() {
@@ -61,7 +62,12 @@ export default function MachineDetailPage() {
 
   function saveMachineInfo() {
     if (!machine) return;
-    machineStore.update(machine.id, { number: machineNumber, modelName });
+    const selected = allModels.find(m => m.id === machineModelId);
+    machineStore.update(machine.id, {
+      number: machineNumber,
+      machineModelId: machineModelId || undefined,
+      modelName: selected?.name ?? '',
+    });
     setEditingModel(false);
   }
 
@@ -165,13 +171,20 @@ export default function MachineDetailPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">機種名</label>
-                    <input
-                      className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-base outline-none focus:border-blue-500"
-                      placeholder="例：北斗無双 など"
-                      value={modelName}
-                      onChange={e => setModelName(e.target.value)}
-                    />
+                    <label className="text-sm font-medium text-gray-600">機種名（機種DB参照）</label>
+                    <select
+                      className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-base outline-none bg-white focus:border-blue-500"
+                      value={machineModelId}
+                      onChange={e => setMachineModelId(e.target.value)}
+                    >
+                      <option value="">未設定</option>
+                      {allModels.map(m => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                    {allModels.length === 0 && (
+                      <p className="text-xs text-gray-400 mt-1">機種DBに機種を登録すると選択できます</p>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -195,7 +208,11 @@ export default function MachineDetailPage() {
                     <p className="text-lg font-bold text-gray-900">{machine.number}</p>
                     <p className="text-xs text-gray-500 mt-2">機種名</p>
                     <p className="text-base text-gray-800">
-                      {machine.modelName || <span className="text-gray-400">未設定</span>}
+                      {(() => {
+                        const m = machine.machineModelId ? allModels.find(m => m.id === machine.machineModelId) : null;
+                        const name = m?.name ?? machine.modelName;
+                        return name || <span className="text-gray-400">未設定</span>;
+                      })()}
                     </p>
                   </div>
                   <button

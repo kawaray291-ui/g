@@ -66,13 +66,14 @@ export interface Island {
 export interface Machine {
   id: string;
   islandId: string;
-  side: 0 | 1;       // 0=表, 1=裏
-  pos: number;        // 島内の順番（0始まり）
-  number: string;     // 台番号
-  modelName: string;  // 機種名
-  shortMemo?: string; // 一言メモ（キャンバス表示用）
-  x?: number;         // キャンバス上のX座標
-  y?: number;         // キャンバス上のY座標
+  side: 0 | 1;
+  pos: number;
+  number: string;
+  modelName: string;
+  machineModelId?: string; // 機種DBへの参照
+  shortMemo?: string;
+  x?: number;
+  y?: number;
 }
 
 export interface MachineNote {
